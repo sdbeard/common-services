@@ -28,11 +28,13 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/sdbeard/common-services/email/conf"
+	"github.com/sdbeard/go-supportlib/common/logging"
 	logger "github.com/sirupsen/logrus"
 )
 
 var (
-	configFile = flag.String("configfile", "config.yaml", "specifies the configuration file to use for the service configuration")
+	configFile = flag.String("configfile", "config.json", "specifies the configuration file to use for the service configuration")
 	build      = ""
 	buildDate  = ""
 	version    = "0.0.0"
@@ -44,11 +46,11 @@ func init() {
 	flag.Parse()
 
 	// Load the configuration
-	//if err := conf.LoadConf(*configFile); err != nil {
-	//	panic(err)
-	//}
+	if err := conf.LoadConf(*configFile); err != nil {
+		panic(err)
+	}
 
-	//logging.InitializeLogging(conf.GetConf().LogConf)
+	logging.InitializeLogging(conf.GetConf().LogConf)
 }
 
 func main() {

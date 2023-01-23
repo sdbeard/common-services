@@ -21,7 +21,6 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ***********************************************************************************
 SHELL := /bin/bash
-BINARY := wse-utildata
 
 # ==================================================================================
 # Build support
@@ -31,7 +30,7 @@ build: clean
 	-f ./_zerf/docker/Dockerfile.amd64 \
 	-t ${BINARY}:1.0.0 \
 	--build-arg VCS_REF=`git rev-parse HEAD` \
-	--build-arg BINARY=${BINARY} \
+	--build-arg BINARY=kp-email \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 	--build-arg VERSION=1.0.0 \
 	.
@@ -42,17 +41,17 @@ dev: clean
 	docker build \
 	-f ./_zerf/docker/Dockerfile.dev \
 	--build-arg VCS_REF=`git rev-parse HEAD` \
-	--build-arg BINARY=${BINARY} \
+	--build-arg BINARY=kp-email \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 	--build-arg VERSION=1.0.0 \
 	--output type=local,dest=build \
 	.
-	@mv ./build/${BINARY} .
+	@mv ./build/kp-email .
 
 clean:
 	$(info Cleaning previous build...)
 	@if [ -d ./build ]; then rm -rf ./build; fi
-	@if [ -f ./${BINARY} ]; then rm -rf ./${BINARY}; fi
+	@if [ -f ./kp-email ]; then rm -rf ./kp-email; fi
 
 # ==================================================================================
 # Modules support
