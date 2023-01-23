@@ -29,6 +29,7 @@ import (
 	"runtime"
 
 	"github.com/sdbeard/common-services/email/conf"
+	"github.com/sdbeard/common-services/email/service"
 	"github.com/sdbeard/go-supportlib/common/logging"
 	logger "github.com/sirupsen/logrus"
 )
@@ -63,17 +64,15 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	//utilDataService, err := util.NewDataService[common.Document](conf.GetConf().UtilDataplane)
+	emailService := service.NewEmailService()
 	//if err != nil {
 	//	panic(err)
 	//}
-	// Create the UtilAPIService
-	///utilAPIService := types.NewCRUDApi(utilDataService, &conf.GetConf().APIConf, conf.GetConf().Path)
 
 	// Start the service
-	//if err := utilAPIService.Start(); err != nil {
-	//	panic(err)
-	//}
+	if err := emailService.Start(); err != nil {
+		panic(err)
+	}
 
 	logger.Info("completed execution...shutting down")
 }
