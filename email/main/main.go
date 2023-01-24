@@ -26,10 +26,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
+	"syscall"
 
 	"github.com/sdbeard/common-services/email/conf"
-	"github.com/sdbeard/common-services/email/service"
 	"github.com/sdbeard/go-supportlib/common/logging"
 	logger "github.com/sirupsen/logrus"
 )
@@ -64,17 +65,34 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	emailService := service.NewEmailService()
-	//if err != nil {
-	//	panic(err)
-	//}
+	stopChannel := createStopChannel()
 
-	// Start the service
-	if err := emailService.Start(); err != nil {
-		panic(err)
-	}
+	api := NewEmailAPI()
 
-	logger.Info("completed execution...shutting down")
+	go api.Start()
+
+	<-stopChannel
+	close(stopChannel)
+
+	// Stop the API
+	api.Stop()
+
+	logger.Info("Completed execution...shutting down")
+}
+
+/**********************************************************************************/
+
+func createStopChannel() chan os.Signal {
+	stopChannel := make(chan os.Signal, 1)
+	signal.Notify(stopChannel,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+	)
+
+	return stopChannel
 }
 
 /**********************************************************************************/

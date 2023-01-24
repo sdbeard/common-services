@@ -20,9 +20,10 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // *********************************************************************************
-package api
+package main
 
 import (
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"path"
@@ -30,10 +31,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/email/conf"
+	"github.com/sdbeard/common-services/email/types"
 	goapi "github.com/sdbeard/go-supportlib/api"
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
-	"github.com/sdbeard/go-supportlib/api/types"
+	apitypes "github.com/sdbeard/go-supportlib/api/types"
+	"github.com/sdbeard/go-supportlib/common/util"
 	"github.com/unrolled/render"
 )
 
@@ -60,6 +63,7 @@ type EmailAPI struct {
 	router        *mux.Router
 	service       *rest.RestService
 	render        *render.Render
+	worker        *types.EmailWorker
 	isInitialized bool
 }
 
@@ -90,7 +94,7 @@ func (api *EmailAPI) initializeRouter(router *mux.Router) {
 	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		api.renderServiceResponse(res, goapi.ErrOK, "Service called")
+		api.render.JSON(res, http.StatusOK, "Service called")
 	})))
 
 	router.Methods("GET").Path("/robots.txt").Handler(chain.ThenFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -104,7 +108,10 @@ func (api *EmailAPI) initializeRouter(router *mux.Router) {
 
 	emailRouter := router.PathPrefix("/kp/email").Subrouter()
 
-	types.BaselineAPI(emailRouter, chain)
+	apitypes.BaselineAPI(emailRouter, chain)
+
+	emailRouter.Methods("POST").Path("/{user}").Handler(chain.ThenFunc(api.sendEmail))
+	emailRouter.Methods("GET").Path("/{user").Handler(chain.ThenFunc(api.getEmail))
 
 	api.router = emailRouter
 	api.isInitialized = true
@@ -112,15 +119,46 @@ func (api *EmailAPI) initializeRouter(router *mux.Router) {
 
 /**********************************************************************************/
 
-func (api EmailAPI) renderServiceResponse(res http.ResponseWriter, statusCode goapi.ServiceResponse, message string) {
-	api.render.JSON(res, statusCode.HTTPCode,
-		goapi.GetServiceResponse(
-			statusCode.ServiceCode,
-			statusCode.HTTPCode,
-			statusCode.Status,
-			message,
-		),
-	)
+func (api EmailAPI) sendEmail(res http.ResponseWriter, req *http.Request) {
+	// Get the user variable
+	vars := mux.Vars(req)
+	user, ok := vars["user"]
+	if !ok {
+		api.render.JSON(res, goapi.ErrMissingAttribute.HTTPCode, "the 'user' variable was not found")
+	}
+	_ = user
+
+	// Get the email from the request body
+	emailBytes, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		api.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Get the email
+	email, err := util.FromJSON[types.Email](emailBytes)
+	if err != nil {
+		api.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err = api.worker.SendEmail(email); err != nil {
+		api.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	api.render.JSON(res, http.StatusOK, "email successfully sent")
+}
+
+func (api EmailAPI) getEmail(res http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	user, ok := vars["user"]
+	if !ok {
+		api.render.JSON(res, goapi.ErrMissingAttribute.HTTPCode, "the 'user' variable was not found")
+	}
+	_ = user
+
+	api.render.JSON(res, goapi.ErrNotImplemented.HTTPCode, "function not implemented")
 }
 
 /**********************************************************************************/
