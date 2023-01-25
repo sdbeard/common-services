@@ -6,7 +6,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/justinas/alice v1.2.0
 	github.com/sdbeard/env v3.5.0+incompatible
-	github.com/sdbeard/go-supportlib v0.0.0-20230123164349-f1bf098e775a
+	github.com/sdbeard/go-supportlib v0.0.0-20230125160037-558a0da1a3e2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/unrolled/render v1.5.0
 )

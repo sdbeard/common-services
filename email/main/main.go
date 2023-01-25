@@ -31,6 +31,7 @@ import (
 	"syscall"
 
 	"github.com/sdbeard/common-services/email/conf"
+	"github.com/sdbeard/common-services/email/types"
 	"github.com/sdbeard/go-supportlib/common/logging"
 	logger "github.com/sirupsen/logrus"
 )
@@ -65,18 +66,29 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	stopChannel := createStopChannel()
+	config, err := types.EmailConnectionConfigFromString("smtp.gmail.com@587@kronedev@gmail.com,cfuaugwzokjrezcw@region=us-east-2")
+	if err != nil {
+		panic(err)
+	}
 
-	api := NewEmailAPI()
+	smtpClient := types.NewSmtpClient(config)
+	if err = smtpClient.SendEmail(types.Email{}); err != nil {
+		panic(err)
+	}
 
-	go api.Start()
+	/*
+		stopChannel := createStopChannel()
 
-	<-stopChannel
-	close(stopChannel)
+		api := NewEmailAPI()
 
-	// Stop the API
-	api.Stop()
+		go api.Start()
 
+		<-stopChannel
+		close(stopChannel)
+
+		// Stop the API
+		api.Stop()
+	*/
 	logger.Info("Completed execution...shutting down")
 }
 

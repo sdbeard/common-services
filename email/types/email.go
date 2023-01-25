@@ -44,13 +44,14 @@ func NewEmail(toAddresses []string, fromAddress, subject, body string) *Email {
 
 // Email is the representation of an email to send or one received
 type Email struct {
-	Created     time.Time `json:"created" dynamodbav:"created"`
-	Updated     time.Time `json:"updated" dynamodbav:"updated"`
-	ToAddresses []string  `json:"toaddresses" dynamodbav:"toaddresses"`
-	FromAddress string    `json:"from" dynamodbav:"from"`
-	Subject     string    `json:"subject" dynamodbav:"subject"`
-	Body        string    `json:"body" dynamodbav:"body"`
-	User        string    `json:"user" dynamodbav:"user"`
+	Connection  EmailConnectionConfig `json:"connection" dynamodbav:"-"`
+	Created     time.Time             `json:"created" dynamodbav:"created"`
+	Updated     time.Time             `json:"updated" dynamodbav:"updated"`
+	ToAddresses []string              `json:"toaddresses" dynamodbav:"toaddresses"`
+	FromAddress string                `json:"from" dynamodbav:"from"`
+	Subject     string                `json:"subject" dynamodbav:"subject"`
+	Body        string                `json:"body" dynamodbav:"body"`
+	User        string                `json:"user" dynamodbav:"user"`
 }
 
 /**********************************************************************************/
