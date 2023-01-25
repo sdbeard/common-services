@@ -15,4 +15,5 @@
 vendor/
 
 go.sum
+.vscode
 .environ
