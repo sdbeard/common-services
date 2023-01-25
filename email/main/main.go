@@ -66,7 +66,7 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	config, err := types.EmailConnectionConfigFromString("smtp.gmail.com@587@kronedev@gmail.com,cfuaugwzokjrezcw@region=us-east-2")
+	config, err := types.EmailConnectionConfigFromString("")
 	if err != nil {
 		panic(err)
 	}
