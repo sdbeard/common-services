@@ -40,6 +40,7 @@ type SmtpClient struct {
 }
 
 func (client SmtpClient) SendEmail(email Email) error {
+	
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%s", client.config.Host, client.config.Port),
 		smtp.PlainAuth(
@@ -48,8 +49,8 @@ func (client SmtpClient) SendEmail(email Email) error {
 			client.config.Credentials.Password,
 			client.config.Host,
 		),
-		"kronedev@gmail.com",
-		[]string{"sean.beard@parivedasolutions.com"},
-		[]byte("Hello from golang!"),
+		email.FromAddress,
+		email.ToAddresses,
+		[]byte(email.Body),
 	)
 }
