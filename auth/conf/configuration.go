@@ -1,18 +1,18 @@
 // *********************************************************************************
 // The MIT License (MIT)
-
-// Copyright (c) 2023 Sean Beard
-
+//
+// # Copyright (c) 2023 Sean Beard
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy of
 // this software and associated documentation files (the "Software"), to deal in the
 // Software without restriction, including without limitation the rights to use,
 // copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
 // Software, and to permit persons to whom the Software is furnished to do so,
 // subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in all
 // copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
 // FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
@@ -28,9 +28,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/joho/godotenv"
 	"github.com/sdbeard/env/v7"
 	apicfg "github.com/sdbeard/go-supportlib/api/config"
+	"github.com/sdbeard/go-supportlib/aws"
 	"github.com/sdbeard/go-supportlib/common/logging"
 	"github.com/sdbeard/go-supportlib/common/util"
 	"github.com/sdbeard/go-supportlib/data/types/configuration"
@@ -44,6 +44,7 @@ var config *Configuration
 // and authorization service with JWTs
 type Configuration struct {
 	Dataplane     configuration.DataplaneConnection `json:"dataplane" env:"AUTH_DATAPLANE"`
+	AwsConf       aws.ConnectConfig                 `json:"awsconnect" env:"AUTH_AWSCONF"`
 	ApiConf       apicfg.ListenerConfig             `json:"api" env:"AUTH_APICONF"`
 	LogConf       logging.LogConfig                 `json:"log" env:"AUTH_LOGCONF"`
 	WorkingFolder string                            `json:"-"`
@@ -78,9 +79,6 @@ func Load(file string) error {
 	}
 
 	config.WorkingFolder = workingFolder
-
-	// Load the environmnet variables from a file if they exist
-	godotenv.Load()
 
 	return env.Parse(config)
 }
