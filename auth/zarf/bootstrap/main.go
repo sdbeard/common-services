@@ -31,6 +31,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/sdbeard/common-services/auth/api"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/go-supportlib/common/logging"
 	logger "github.com/sirupsen/logrus"
@@ -70,12 +71,18 @@ func main() {
 	stopChannel := createStopChannel()
 
 	// Create the Auth Api
+	auth, err := api.NewAuthApi[*User]()
+	if err != nil {
+		panic(err)
+	}
+
+	go auth.Start()
 
 	<-stopChannel
 	close(stopChannel)
 
 	// Stop the Api
-	//auth.Stop()
+	auth.Stop()
 
 	logger.Info("completed execution...shutting down")
 }

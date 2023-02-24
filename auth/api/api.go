@@ -28,6 +28,7 @@ import (
 	"mime"
 	"net/http"
 	"path"
+	"reflect"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -82,8 +83,8 @@ func (authapi *AuthApi[TUser]) Stop() {
 /**********************************************************************************/
 
 func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
-	chain := alice.New(handlers.JSONContentTypeHandler)
-	authChain := alice.New(middleware.IsAuthorized, handlers.JSONContentTypeHandler)
+	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
+	authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
 	_ = authChain
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -114,32 +115,53 @@ func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 	})
 }
 
-func (authapi *AuthApi[TUser]) enroll(w http.ResponseWriter, r *http.Request) {
+func (authapi *AuthApi[TUser]) enroll(res http.ResponseWriter, req *http.Request) {
+	/*
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		user, err := util.FromJSON[TUser](body)
+		if err != nil {
+			authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+			return
+		}
+	*/
 	var user TUser
-	var render = render.New()
+	userType := reflect.TypeOf(user)
+	userValue := reflect.New(userType.Elem())
+	userType2 := userValue.Interface().(TUser)
+	_ = userType2
+	//userPointer := reflect.New(userType)
+	//userValue := userPointer.Elem()
+	//userInterface := userValue.Interface()
+	//user2 := userInterface.(TUser)
+	//user2.SetPassword("test")
 
-	err := json.NewDecoder(r.Body).Decode(&user)
+	err := json.NewDecoder(req.Body).Decode(userType2)
 	if err != nil {
-		render.JSON(w, http.StatusInternalServerError, err.Error())
+		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(user.Password())
+	hashedPassword, err := secure.GenerateHashPassword(userType2.Password())
 	if err != nil {
-		render.JSON(w, http.StatusInternalServerError, err.Error())
+		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
-	user.SetPassword(hashedPassword)
+	userType2.SetPassword(hashedPassword)
 
 	if err = dataservice.Add[TUser](dataservice.Request{
 		Dataplane: conf.Get().Dataplane,
-		Value:     &user,
+		Value:     userType2,
 	}); err != nil {
-		render.JSON(w, http.StatusInternalServerError, err.Error())
+		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	render.JSON(w, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
+	authapi.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
 }
 
 func (authapi *AuthApi[TUser]) authenticate(w http.ResponseWriter, r *http.Request) {

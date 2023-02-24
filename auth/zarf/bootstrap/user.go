@@ -102,7 +102,7 @@ func (user *User) Item() interface{} {
 
 		return *ddbUser
 	*/
-	return *user
+	return user
 }
 
 func (user *User) Type() string {

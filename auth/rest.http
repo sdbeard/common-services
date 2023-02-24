@@ -1,5 +1,16 @@
 ###
-http://127.0.0.1:4000/kp/email/ping
+GET http://127.0.0.1:8000/ping
 
 ###
-http://127.0.0.1:4000/kp/email/mypath
+GET http://127.0.0.1:8000/mypath
+
+###
+POST http://127.0.0.1:8000/enroll
+
+{
+  "name": "Sean Beard",
+  "email": "sean@smithvilledrones.com",
+  "password": "Fatboy242!",
+  "role": "admin",
+  "enabled": true
+}
