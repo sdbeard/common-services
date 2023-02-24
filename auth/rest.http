@@ -22,3 +22,7 @@ POST http://127.0.0.1:8000/authenticate
   "username": "sean@smithvilledrones.com",
   "password": "Fatboy242!"
 }
+
+###
+GET http://127.0.0.1:8000/admin
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2NzczNjU5NzUsInJvbGUiOiJhZG1pbiIsInVzZXIiOiJzZWFuQHNtaXRodmlsbGVkcm9uZXMuY29tIn0.q0izFOGQl2dizUtRgIAGBd143cD4WMHFXPL-1PBhEM0

@@ -25,22 +25,30 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/unrolled/render"
 )
 
 func IsAuthorized(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		render := render.New()
 
-		if r.Header["Token"] == nil {
-			render.JSON(w, http.StatusUnauthorized, "no token found")
+		authToken := parseBearerToken(req.Header.Get("Authorization"))
+		if authToken == "" {
+			render.JSON(res, http.StatusUnauthorized, "no token found")
 			return
 		}
+		/*
+			if r.Header["Token"] == nil {
+				render.JSON(w, http.StatusUnauthorized, "no token found")
+				return
+			}
+		*/
 
 		var mySigningKey = []byte("secretkey")
-		token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("there was an error in parsing")
 			}
@@ -48,16 +56,24 @@ func IsAuthorized(next http.Handler) http.Handler {
 		})
 
 		if err != nil {
-			render.JSON(w, http.StatusInternalServerError, "your token has expired")
+			render.JSON(res, http.StatusInternalServerError, "your token has expired")
 			return
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			r.Header.Set("Role", claims["role"].(string))
-			next.ServeHTTP(w, r)
+			req.Header.Set("Role", claims["role"].(string))
+			next.ServeHTTP(res, req)
 			return
 		}
 
-		render.JSON(w, http.StatusUnauthorized, "not authorized")
+		render.JSON(res, http.StatusUnauthorized, "not authorized")
 	})
+}
+
+func parseBearerToken(auth string) string {
+	tokens := strings.Split(auth, "Bearer ")
+	if len(tokens) == 2 {
+		return tokens[1]
+	}
+	return ""
 }

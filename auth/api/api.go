@@ -51,6 +51,7 @@ import (
 func NewAuthApi[TUser types.AuthUser]() (*AuthApi[TUser], error) {
 	newApi := &AuthApi[TUser]{
 		render: render.New(),
+		secret: []byte("secretkey"),
 	}
 
 	newApi.service = rest.NewRestService(
@@ -86,7 +87,6 @@ func (authapi *AuthApi[TUser]) Stop() {
 func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 	authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
-	_ = authChain
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		authapi.render.JSON(res, http.StatusOK, "service called")
@@ -105,7 +105,7 @@ func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 
 	router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(authapi.enroll))
 	router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(authapi.authenticate))
-	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(authapi.adminIndex))
+	router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(authapi.adminIndex))
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
@@ -175,7 +175,7 @@ func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.R
 		return
 	}
 
-	validToken, err := secure.GenerateJWT(authapi.secret, nil)
+	validToken, err := secure.GenerateJWT(authapi.secret, authUser.GetClaims())
 	if err != nil {
 		authapi.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
@@ -193,8 +193,9 @@ func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.R
 func (authapi *AuthApi) index(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("HOME PUBLIC INDEX PAGE"))
 }
+*/
 
-func (authapi *AuthApi) adminIndex(w http.ResponseWriter, r *http.Request) {
+func (authapi *AuthApi[TUser]) adminIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Role") != "admin" {
 		w.Write([]byte("Not authorized."))
 		return
@@ -202,6 +203,7 @@ func (authapi *AuthApi) adminIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Welcome, Admin."))
 }
 
+/*
 func (authapi *AuthApi) userIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Role") != "user" {
 		w.Write([]byte("Not authorized."))
