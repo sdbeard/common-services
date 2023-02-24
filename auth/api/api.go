@@ -28,7 +28,6 @@ import (
 	"mime"
 	"net/http"
 	"path"
-	"reflect"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -39,6 +38,8 @@ import (
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
+	"github.com/sdbeard/go-supportlib/aws/service/dynamodb"
+	"github.com/sdbeard/go-supportlib/common/util"
 	"github.com/sdbeard/go-supportlib/data/types/dsapi"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
 	"github.com/unrolled/render"
@@ -116,46 +117,24 @@ func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 }
 
 func (authapi *AuthApi[TUser]) enroll(res http.ResponseWriter, req *http.Request) {
-	/*
-		body, err := io.ReadAll(req.Body)
-		if err != nil {
-			authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
-			return
-		}
+	user := util.GetTypeObject[TUser]()
 
-		user, err := util.FromJSON[TUser](body)
-		if err != nil {
-			authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
-			return
-		}
-	*/
-	var user TUser
-	userType := reflect.TypeOf(user)
-	userValue := reflect.New(userType.Elem())
-	userType2 := userValue.Interface().(TUser)
-	_ = userType2
-	//userPointer := reflect.New(userType)
-	//userValue := userPointer.Elem()
-	//userInterface := userValue.Interface()
-	//user2 := userInterface.(TUser)
-	//user2.SetPassword("test")
-
-	err := json.NewDecoder(req.Body).Decode(userType2)
+	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
 		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(userType2.Password())
+	hashedPassword, err := secure.GenerateHashPassword(user.Password())
 	if err != nil {
 		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
-	userType2.SetPassword(hashedPassword)
+	user.SetPassword(hashedPassword)
 
 	if err = dataservice.Add[TUser](dataservice.Request{
 		Dataplane: conf.Get().Dataplane,
-		Value:     userType2,
+		Value:     user,
 	}); err != nil {
 		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
@@ -164,36 +143,41 @@ func (authapi *AuthApi[TUser]) enroll(res http.ResponseWriter, req *http.Request
 	authapi.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
 }
 
-func (authapi *AuthApi[TUser]) authenticate(w http.ResponseWriter, r *http.Request) {
-	var authDetails types.Authentication
-	var render = render.New()
+func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.Request) {
+	authDetails := new(types.Authentication)
 
-	err := json.NewDecoder(r.Body).Decode(&authDetails)
+	err := json.NewDecoder(req.Body).Decode(authDetails)
 	if err != nil {
-		render.JSON(w, http.StatusInternalServerError, err.Error())
+		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	tags := dynamodb.ProcessDynamoTags(util.GetTypeObject[TUser]())
+	hashKey, _ := tags.HashKey()
+	if hashKey == "" {
+		hashKey = conf.Get().Dataplane.Parameters["hashkey"].(string)
 	}
 
 	authUser, err := dataservice.GetItem[TUser](dataservice.Request{
 		Dataplane:  conf.Get().Dataplane,
-		Key:        conf.Get().Dataplane.Parameters["hashkey"].(string),
+		Key:        hashKey,
 		Value:      authDetails.Username,
 		Comparator: dsapi.EQ,
 	})
 	if err != nil {
-		render.JSON(w, http.StatusInternalServerError, err.Error())
+		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	check := secure.CheckPasswordHash(authDetails.Password, authUser.Password())
 	if !check {
-		render.JSON(w, http.StatusUnauthorized, "username or password is incorrect")
+		authapi.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
 		return
 	}
 
 	validToken, err := secure.GenerateJWT(authapi.secret, nil)
 	if err != nil {
-		render.JSON(w, http.StatusUnauthorized, "failed to generate token")
+		authapi.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
 	}
 
@@ -202,7 +186,7 @@ func (authapi *AuthApi[TUser]) authenticate(w http.ResponseWriter, r *http.Reque
 	//token.Role = authUser.Role
 	//token.TokenString = validToken
 
-	render.JSON(w, http.StatusOK, validToken)
+	authapi.render.JSON(res, http.StatusOK, validToken)
 }
 
 /*
