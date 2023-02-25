@@ -31,6 +31,9 @@ import (
 	"github.com/unrolled/render"
 )
 
+// Cookies
+// https://golang.ch/how-to-work-with-cookies-in-golang/#:~:text=Basic%20usage%20of%20Cookies%20with%20Golang%201%20Name,SameSite%20constants%20from%20the%20net%2Fhttp%20package.%20More%20items
+
 func IsAuthorized(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		render := render.New()
