@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
 
@@ -38,17 +39,11 @@ func IsAuthorized(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		render := render.New()
 
-		authToken := parseBearerToken(req.Header.Get("Authorization"))
+		authToken := getTokenFromHeader(req)
 		if authToken == "" {
 			render.JSON(res, http.StatusUnauthorized, "no token found")
 			return
 		}
-		/*
-			if r.Header["Token"] == nil {
-				render.JSON(w, http.StatusUnauthorized, "no token found")
-				return
-			}
-		*/
 
 		var mySigningKey = []byte("secretkey")
 		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
@@ -73,10 +68,26 @@ func IsAuthorized(next http.Handler) http.Handler {
 	})
 }
 
-func parseBearerToken(auth string) string {
-	tokens := strings.Split(auth, "Bearer ")
+func getTokenFromHeader(req *http.Request) string {
+	authHeader := req.Header.Get("Authorization")
+	if authHeader == "" {
+		return getTokenFromAuthCookie(req)
+	}
+
+	tokens := strings.Split(authHeader, "Bearer ")
 	if len(tokens) == 2 {
 		return tokens[1]
 	}
+
 	return ""
+}
+
+func getTokenFromAuthCookie(req *http.Request) string {
+	cookie, err := req.Cookie("auth")
+	if err != nil {
+		logger.Error(err.Error())
+		return ""
+	}
+
+	return cookie.Value
 }

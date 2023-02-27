@@ -181,19 +181,8 @@ func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.R
 		return
 	}
 
-	//var token types.Token
-	//token.Email = authUser.Email
-	//token.Role = authUser.Role
-	//token.TokenString = validToken
-
 	authapi.render.JSON(res, http.StatusOK, validToken)
 }
-
-/*
-func (authapi *AuthApi) index(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("HOME PUBLIC INDEX PAGE"))
-}
-*/
 
 func (authapi *AuthApi[TUser]) adminIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Role") != "admin" {
@@ -203,13 +192,4 @@ func (authapi *AuthApi[TUser]) adminIndex(w http.ResponseWriter, r *http.Request
 	w.Write([]byte("Welcome, Admin."))
 }
 
-/*
-func (authapi *AuthApi) userIndex(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Role") != "user" {
-		w.Write([]byte("Not authorized."))
-		return
-	}
-	w.Write([]byte("Welcome, User."))
-}
-*/
 /**********************************************************************************/

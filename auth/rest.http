@@ -25,4 +25,4 @@ POST http://127.0.0.1:8000/authenticate
 
 ###
 GET http://127.0.0.1:8000/admin
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2Nzc0MTYwNTUsInJvbGUiOiJhZG1pbiIsInVzZXIiOiJzZWFuQHNtaXRodmlsbGVkcm9uZXMuY29tIn0.H4Ifk-k69i70VzMh7rwEgMcvwxld5ZgmzSfx3DEh7dQ
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2Nzc1OTUwMTEsInJvbGUiOiJhZG1pbiIsInVzZXIiOiJzZWFuQHNtaXRodmlsbGVkcm9uZXMuY29tIn0.HdLQLVvvrCRkxiVzJO_qNt0ibxNVchgTGKn7ORDclz0
