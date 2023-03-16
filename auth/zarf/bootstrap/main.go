@@ -71,7 +71,7 @@ func main() {
 	stopChannel := createStopChannel()
 
 	// Create the Auth Api
-	auth, err := api.NewAuthApi[*User]()
+	auth, err := api.NewAuthService[*User]("", "")
 	if err != nil {
 		panic(err)
 	}

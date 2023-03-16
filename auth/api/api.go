@@ -48,48 +48,52 @@ import (
 
 /**********************************************************************************/
 
-func NewAuthApi[TUser types.AuthUser]() (*AuthApi[TUser], error) {
-	newApi := &AuthApi[TUser]{
-		render: render.New(),
-		secret: []byte("secretkey"),
+func NewAuthService[TUser types.AuthUser](secretKey, servicePath string) (*AuthService[TUser], error) {
+	newService := &AuthService[TUser]{
+		render:    render.New(),
+		secret:    []byte("secretkey"),
+		secretKey: secretKey,
+		path:      servicePath,
 	}
 
-	newApi.service = rest.NewRestService(
+	newService.RestService = rest.NewRestService(
 		&conf.Get().ApiConf,
-		newApi.initializeRouter,
+		newService.initializeRouter,
 	)
 
-	return newApi, nil
+	return newService, nil
 }
 
 /**********************************************************************************/
 
-type AuthApi[TUser types.AuthUser] struct {
-	service *rest.RestService
-	render  *render.Render
-	secret  []byte
+type AuthService[TUser types.AuthUser] struct {
+	*rest.RestService
+	render    *render.Render
+	secret    []byte
+	secretKey string
+	path      string
 }
 
 /***** exported functions *********************************************************/
 
 // Start starts the running version of the API and is ready to receive requests
-func (authapi *AuthApi[TUser]) Start() error {
-	return authapi.service.StartSimple()
+func (auth *AuthService[TUser]) Start() error {
+	return auth.StartSimple()
 }
 
 // Stop initiaties the graceful shutdown of the API's underlying rest service
-func (authapi *AuthApi[TUser]) Stop() {
-	authapi.service.Stop()
+func (auth *AuthService[TUser]) Stop() {
+	auth.RestService.Stop()
 }
 
 /**********************************************************************************/
 
-func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
+func (auth *AuthService[TUser]) initializeRouter(router *mux.Router) {
 	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 	authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		authapi.render.JSON(res, http.StatusOK, "service called")
+		auth.render.JSON(res, http.StatusOK, "service called")
 	})))
 
 	router.Methods("GET").Path("/robots.txt").Handler(chain.ThenFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -103,9 +107,9 @@ func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 
 	apitypes.BaselineAPI(router, chain)
 
-	router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(authapi.enroll))
-	router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(authapi.authenticate))
-	router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(authapi.adminIndex))
+	router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(auth.enroll))
+	router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
+	router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
@@ -116,18 +120,18 @@ func (authapi *AuthApi[TUser]) initializeRouter(router *mux.Router) {
 	})
 }
 
-func (authapi *AuthApi[TUser]) enroll(res http.ResponseWriter, req *http.Request) {
+func (auth *AuthService[TUser]) enroll(res http.ResponseWriter, req *http.Request) {
 	user := util.GetTypeObject[TUser]()
 
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
-		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	hashedPassword, err := secure.GenerateHashPassword(user.Password())
 	if err != nil {
-		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 	user.SetPassword(hashedPassword)
@@ -136,19 +140,19 @@ func (authapi *AuthApi[TUser]) enroll(res http.ResponseWriter, req *http.Request
 		Dataplane: conf.Get().Dataplane,
 		Value:     user,
 	}); err != nil {
-		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	authapi.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
+	auth.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
 }
 
-func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.Request) {
+func (auth *AuthService[TUser]) authenticate(res http.ResponseWriter, req *http.Request) {
 	authDetails := new(types.Authentication)
 
 	err := json.NewDecoder(req.Body).Decode(authDetails)
 	if err != nil {
-		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -165,26 +169,26 @@ func (authapi *AuthApi[TUser]) authenticate(res http.ResponseWriter, req *http.R
 		Comparator: dsapi.EQ,
 	})
 	if err != nil {
-		authapi.render.JSON(res, http.StatusInternalServerError, err.Error())
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	check := secure.CheckPasswordHash(authDetails.Password, authUser.Password())
 	if !check {
-		authapi.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
+		auth.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
 		return
 	}
 
-	validToken, err := secure.GenerateJWT(authapi.secret, authUser.GetClaims())
+	validToken, err := secure.GenerateJWT(auth.secret, authUser.GetClaims())
 	if err != nil {
-		authapi.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
+		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
 	}
 
-	authapi.render.JSON(res, http.StatusOK, validToken)
+	auth.render.JSON(res, http.StatusOK, validToken)
 }
 
-func (authapi *AuthApi[TUser]) adminIndex(w http.ResponseWriter, r *http.Request) {
+func (auth *AuthService[TUser]) adminIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Role") != "admin" {
 		w.Write([]byte("Not authorized."))
 		return
