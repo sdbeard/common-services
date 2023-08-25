@@ -27,19 +27,29 @@ import (
 	"time"
 
 	"github.com/sdbeard/go-supportlib/common/util"
+	"github.com/sdbeard/go-supportlib/data/types/common"
 )
 
 /***** User ***********************************************************************/
 
 type User struct {
-	Created   time.Time `json:"created" dynamodbav:"created"`
-	Updated   time.Time `json:"updated" dynamodbav:"updated"`
-	Name      string    `json:"name" dynamodbav:"name"`
-	Email     string    `json:"email" dynamodbav:"email" ddb:"condition=attribute_not_exists(email)|hashkey"`
-	Pwd       string    `json:"password" dynamodbav:"password"`
-	Role      string    `json:"role" dynamodbav:"role"`
-	IsEnabled bool      `json:"enabled" dynamodbav:"enabled"`
+	common.Document
+	Created   time.Time `json:"created"`
+	Updated   time.Time `json:"updated"`
+	User      string    `json:"user"`
+	Password  string    `json:"password"`
+	Role      string    `json:"role"`
+	IsEnabled bool      `json:"isenabled"`
+	/*
+		Name      string    `json:"name" dynamodbav:"name"`
+		Email     string    `json:"email" dynamodbav:"email" ddb:"condition=attribute_not_exists(email)|hashkey"`
+		Pwd       string    `json:"password" dynamodbav:"password"`
+		Role      string    `json:"role" dynamodbav:"role"`
+		IsEnabled bool      `json:"enabled" dynamodbav:"enabled"`
+	*/
 }
+
+type UserProfile struct{}
 
 /***** Marshaler interface implementations ****************************************/
 
@@ -80,29 +90,19 @@ func (user *User) UnmarshalJSON(data []byte) error {
 
 /***** Datasource Document interface implementation *******************************/
 
-// ID returns the key/id to query and identify the event bus
-func (user *User) Id() string {
-	return user.Email
-}
-
 // Item returns an anonymous struct to be saved
 func (user *User) Item() interface{} {
-	/*
-		type Alias User
+	type Alias User
 
-		ddbUser := &struct {
-			PK   string `dynamodbav:"PK" ddb:"condition=attribute_not_exists(PK)|hashkey=PK`
-			Type string `json:"type" dynamodbav:"type"`
-			*Alias
-		}{
-			PK:    user.Id(),
-			Type:  user.Type(),
-			Alias: (*Alias)(user),
-		}
+	persistUser := &struct {
+		Type string `json:"type"`
+		*Alias
+	}{
+		Type:  user.Type(),
+		Alias: (*Alias)(user),
+	}
 
-		return *ddbUser
-	*/
-	return user
+	return *persistUser
 }
 
 func (user *User) Type() string {
@@ -121,12 +121,10 @@ func (user *User) Update(userName string) {
 	user.Updated = now
 }
 
-func (user *User) UserId() string {
-	return user.Email
-}
+/***** exported functions *********************************************************/
 
-func (user *User) Password() string {
-	return user.Pwd
+func (user *User) UserId() string {
+	return user.User
 }
 
 func (user *User) Enabled() bool {
@@ -134,12 +132,12 @@ func (user *User) Enabled() bool {
 }
 
 func (user *User) SetPassword(password string) {
-	user.Pwd = password
+	user.Password = password
 }
 
 func (user *User) GetClaims() map[string]interface{} {
 	return map[string]interface{}{
-		"user": user.UserId(),
+		"user": user.User,
 		"role": user.Role,
 	}
 }

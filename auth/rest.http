@@ -1,4 +1,40 @@
 ###
+PUT http://es.testlab.local/authuser?pretty
+Content-Type: application/json
+
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "userid":{
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 32
+          }
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+###
 GET http://127.0.0.1:8000/ping
 
 ###
