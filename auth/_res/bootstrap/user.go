@@ -22,16 +22,9 @@
 // *********************************************************************************
 package main
 
-import (
-	"encoding/json"
-	"time"
-
-	"github.com/sdbeard/go-supportlib/common/util"
-	"github.com/sdbeard/go-supportlib/data/types/common"
-)
-
 /***** User ***********************************************************************/
 
+/*
 type User struct {
 	common.Document
 	Created   time.Time `json:"created"`
@@ -46,13 +39,13 @@ type User struct {
 		Pwd       string    `json:"password" dynamodbav:"password"`
 		Role      string    `json:"role" dynamodbav:"role"`
 		IsEnabled bool      `json:"enabled" dynamodbav:"enabled"`
-	*/
-}
+*/
+//}
 
-type UserProfile struct{}
+//type UserProfile struct{}
 
 /***** Marshaler interface implementations ****************************************/
-
+/*
 // MarshalJSON marshals the Organization to a JSON string
 func (user User) MarshalJSON() ([]byte, error) {
 	type Alias User
@@ -87,9 +80,9 @@ func (user *User) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
+*/
 /***** Datasource Document interface implementation *******************************/
-
+/*
 // Item returns an anonymous struct to be saved
 func (user *User) Item() interface{} {
 	type Alias User
@@ -120,9 +113,9 @@ func (user *User) Update(userName string) {
 
 	user.Updated = now
 }
-
+*/
 /***** exported functions *********************************************************/
-
+/*
 func (user *User) UserId() string {
 	return user.User
 }
@@ -141,5 +134,5 @@ func (user *User) GetClaims() map[string]interface{} {
 		"role": user.Role,
 	}
 }
-
+*/
 /**********************************************************************************/

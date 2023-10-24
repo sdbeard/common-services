@@ -20,14 +20,17 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // *********************************************************************************
-package api
+package main
 
 import (
 	"encoding/json"
 	"fmt"
 	"mime"
 	"net/http"
+	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
@@ -48,8 +51,8 @@ import (
 
 /**********************************************************************************/
 
-func NewAuthService[TUser types.AuthUser](secretKey, servicePath string) (*AuthService[TUser], error) {
-	newService := &AuthService[TUser]{
+func NewAuthService(secretKey, servicePath string) (*AuthService, error) {
+	newService := &AuthService{
 		render:    render.New(),
 		secret:    []byte("secretkey"),
 		secretKey: secretKey,
@@ -66,29 +69,30 @@ func NewAuthService[TUser types.AuthUser](secretKey, servicePath string) (*AuthS
 
 /**********************************************************************************/
 
-type AuthService[TUser types.AuthUser] struct {
+type AuthService struct {
 	*rest.RestService
-	render    *render.Render
-	secret    []byte
-	secretKey string
-	path      string
+	render      *render.Render
+	stopChannel chan os.Signal
+	secret      []byte
+	secretKey   string
+	path        string
 }
 
 /***** exported functions *********************************************************/
 
 // Start starts the running version of the API and is ready to receive requests
-func (auth *AuthService[TUser]) Start() error {
+func (auth *AuthService) Start() error {
 	return auth.StartSimple()
 }
 
 // Stop initiaties the graceful shutdown of the API's underlying rest service
-func (auth *AuthService[TUser]) Stop() {
+func (auth *AuthService) Stop() {
 	auth.RestService.Stop()
 }
 
 /**********************************************************************************/
 
-func (auth *AuthService[TUser]) initializeRouter(router *mux.Router) {
+func (auth *AuthService) initializeRouter(router *mux.Router) {
 	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 	authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
 
@@ -100,7 +104,7 @@ func (auth *AuthService[TUser]) initializeRouter(router *mux.Router) {
 		res.Header().Set("Content-Type", mime.TypeByExtension(path.Ext("robots.txt")))
 		res.WriteHeader(200)
 		res.Write([]byte("# workshop-engine orgs service\n" +
-			"# https://github.com/sdbeard/workshop-engine/services/admin/\n" +
+			"# https://github.com/sdbeard/common-services/auth/\n" +
 			"User-agent: *\n" +
 			"Disallow: /"))
 	}))
@@ -120,8 +124,8 @@ func (auth *AuthService[TUser]) initializeRouter(router *mux.Router) {
 	})
 }
 
-func (auth *AuthService[TUser]) enroll(res http.ResponseWriter, req *http.Request) {
-	user := util.GetTypeObject[TUser]()
+func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
+	user := new(types.User)
 
 	err := json.NewDecoder(req.Body).Decode(&user)
 	if err != nil {
@@ -129,14 +133,14 @@ func (auth *AuthService[TUser]) enroll(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(user.Password())
+	hashedPassword, err := secure.GenerateHashPassword(user.Password)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
-	user.SetPassword(hashedPassword)
+	user.Password = hashedPassword
 
-	if err = dataservice.Add[TUser](dataservice.Request{
+	if err = dataservice.Add[*types.User](dataservice.Request{
 		Dataplane: conf.Get().Dataplane,
 		Value:     user,
 	}); err != nil {
@@ -144,10 +148,10 @@ func (auth *AuthService[TUser]) enroll(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	auth.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.UserId()))
+	auth.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.Id()))
 }
 
-func (auth *AuthService[TUser]) authenticate(res http.ResponseWriter, req *http.Request) {
+func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request) {
 	authDetails := new(types.Authentication)
 
 	err := json.NewDecoder(req.Body).Decode(authDetails)
@@ -162,7 +166,7 @@ func (auth *AuthService[TUser]) authenticate(res http.ResponseWriter, req *http.
 		hashKey = conf.Get().Dataplane.Parameters["hashkey"].(string)
 	}
 
-	authUser, err := dataservice.GetItem[TUser](dataservice.Request{
+	authUser, err := dataservice.GetItem[*types.User](dataservice.Request{
 		Dataplane:  conf.Get().Dataplane,
 		Key:        hashKey,
 		Value:      authDetails.Username,
@@ -173,13 +177,13 @@ func (auth *AuthService[TUser]) authenticate(res http.ResponseWriter, req *http.
 		return
 	}
 
-	check := secure.CheckPasswordHash(authDetails.Password, authUser.Password())
+	check := secure.CheckPasswordHash(authDetails.Password, authUser.Password)
 	if !check {
 		auth.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
 		return
 	}
 
-	validToken, err := secure.GenerateJWT(auth.secret, authUser.GetClaims())
+	validToken, err := secure.GenerateJWT(auth.secret, authUser.Claims)
 	if err != nil {
 		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
@@ -188,12 +192,23 @@ func (auth *AuthService[TUser]) authenticate(res http.ResponseWriter, req *http.
 	auth.render.JSON(res, http.StatusOK, validToken)
 }
 
-func (auth *AuthService[TUser]) adminIndex(w http.ResponseWriter, r *http.Request) {
+func (auth *AuthService) adminIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Role") != "admin" {
 		w.Write([]byte("Not authorized."))
 		return
 	}
 	w.Write([]byte("Welcome, Admin."))
+}
+
+func (auth *AuthService[TUser]) createStopChannel() {
+	auth.stopChannel = make(chan os.Signal, 1)
+	signal.Notify(auth.stopChannel,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+	)
 }
 
 /**********************************************************************************/

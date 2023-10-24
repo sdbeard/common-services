@@ -34,6 +34,7 @@ import (
 	"github.com/sdbeard/go-supportlib/common/logging"
 	"github.com/sdbeard/go-supportlib/common/util"
 	"github.com/sdbeard/go-supportlib/data/types/configuration"
+	"github.com/sdbeard/go-supportlib/secure/secrets"
 )
 
 var config *Configuration
@@ -47,6 +48,7 @@ type Configuration struct {
 	AwsConf       aws.ConnectConfig                 `json:"awsconnect" env:"AUTH_AWSCONF"`
 	ApiConf       apicfg.ListenerConfig             `json:"api" env:"AUTH_APICONF"`
 	LogConf       logging.LogConfig                 `json:"log" env:"AUTH_LOGCONF"`
+	SecretsConf   secrets.ManagerConf               `json:"secrets" env:"AUTH_SECRETSCONF"`
 	WorkingFolder string                            `json:"-"`
 }
 

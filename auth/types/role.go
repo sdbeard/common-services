@@ -30,58 +30,47 @@ import (
 )
 
 /**********************************************************************************/
+/***** Role ***********************************************************************/
 
-// NewUser creates a new user object and returns the reference
-func NewUser() *User {
-	return &User{
-		Profile: new(UserProfile),
-		Claims:  make([]string, 0),
-		Created: time.Now(),
-	}
+// Role defines a Role that a User holds as part of an RBAC system
+type Role struct {
+	Created     time.Time `json:"created"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Active      bool      `json:"active"`
 }
 
-/***** User ***********************************************************************/
+/***** Marshaler interface implmentation ******************************************/
 
-// AuthUser
-type User struct {
-	Profile  *UserProfile `json:"profile,omitempty"`
-	Username string       `json:"username"`
-	Password string       `json:"password"`
-	Claims   []string     `json:"claims,omitempty"`
-	Created  time.Time    `json:"created"`
-}
-
-/***** Marshaler interfaces *******************************************************/
-
-// MarshalJSON is a method allowing serialization of the User
-func (user User) MarshalJSON() ([]byte, error) {
-	type Alias User
+// MarshalJSON is a method allowing serialization of the Role
+func (role Role) MarshalJSON() ([]byte, error) {
+	type Alias Role
 
 	return json.Marshal(&struct {
 		Created int64 `json:"created"`
 		Alias
 	}{
-		Created: user.Created.Unix(),
-		Alias:   (Alias)(user),
+		Created: role.Created.Unix(),
+		Alias:   (Alias)(role),
 	})
 }
 
 // UnmarshalJSON is a method implemented allowing de-serialization of the
-// User
-func (user *User) UnmarshalJSON(data []byte) error {
-	type Alias User
+// Role
+func (role *Role) UnmarshalJSON(data []byte) error {
+	type Alias Role
 	aux := &struct {
 		Created int64 `json:"created"`
 		*Alias
 	}{
-		Alias: (*Alias)(user),
+		Alias: (*Alias)(role),
 	}
 
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
-	user.Created = time.Unix(aux.Created, 0)
+	role.Created = time.Unix(aux.Created, 0)
 
 	return nil
 }
@@ -89,8 +78,8 @@ func (user *User) UnmarshalJSON(data []byte) error {
 /***** Datasource Document interface implementation *******************************/
 
 // Item returns an object that represents the object to stored
-func (user *User) Item() interface{} {
-	type Alias User
+func (role *Role) Item() interface{} {
+	type Alias Role
 
 	item := &struct {
 		ID      string `json:"id"`
@@ -98,37 +87,36 @@ func (user *User) Item() interface{} {
 		Created int64  `json:"created"`
 		*Alias
 	}{
-		ID:      user.Id(),
-		Type:    user.Type(),
-		Created: user.Created.Unix(),
-		Alias:   (*Alias)(user),
+		ID:      role.Id(),
+		Type:    role.Type(),
+		Created: role.Created.Unix(),
+		Alias:   (*Alias)(role),
 	}
 
 	return item
 }
 
 // ID returns the key/id to query and identify the event bus
-func (user *User) Id() string {
-	return ""
+func (role *Role) Id() string {
+	return role.Name
 }
 
 // Type returns the reflect Type representation of the current object
-func (user *User) Type() string {
-	return util.GetTypeName(user)
+func (role *Role) Type() string {
+	return util.GetTypeName(role)
 }
 
 // IdKey returns the specific key used to query an object by ID
-func (user *User) IdKey() string {
+func (role *Role) IdKey() string {
 	return "id"
 }
 
 // Updates the state of the document if necessary
-func (user *User) Update(username string) {
-	if user.Created.Unix() < 0 {
-		user.Created = time.Now()
+func (role *Role) Update(user string) {
+	if role.Created.Unix() < 0 {
+		role.Created = time.Now()
 	}
 }
 
-/***** exported functions *********************************************************/
 /**********************************************************************************/
 /**********************************************************************************/
