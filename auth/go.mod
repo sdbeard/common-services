@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/justinas/alice v1.2.0
 	github.com/sdbeard/env/v7 v7.0.1
-	github.com/sdbeard/go-supportlib v0.0.0-20231024212818-b24d2a0d3900
+	github.com/sdbeard/go-supportlib v0.0.0-20231024214630-7b3709ca07dc
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/render v1.6.1
 	golang.org/x/crypto v0.14.0
