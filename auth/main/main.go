@@ -67,6 +67,11 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
+	authService, _ := NewAuthService()
+	if err := authService.Start(); err != nil {
+		panic(err)
+	}
+
 	logger.Info("completed execution...shutting down")
 }
 

@@ -34,10 +34,10 @@ import (
 
 // JWTSecret holds the values for the JWT signing string and expiration
 type JWTSecret struct {
-	Previous   [][]byte      `json:"previous,omitempty"`
-	Key        []byte        `json:"key"`
-	Expiration time.Duration `json:"expiration"`
-	Name       string        `json:"name"`
+	Previous [][]byte      `json:"previous,omitempty"`
+	Key      []byte        `json:"key"`
+	Exp      time.Duration `json:"exp"`
+	Name     string        `json:"name"`
 }
 
 /***** Marshaler interfaces *******************************************************/
@@ -47,11 +47,11 @@ func (secret JWTSecret) MarshalJSON() ([]byte, error) {
 	type Alias JWTSecret
 
 	return json.Marshal(&struct {
-		Expiration string `json:"expiration"`
+		Exp string `json:"exp"`
 		Alias
 	}{
-		Expiration: secret.Expiration.String(),
-		Alias:      (Alias)(secret),
+		Exp:   secret.Exp.String(),
+		Alias: (Alias)(secret),
 	})
 }
 
@@ -60,7 +60,7 @@ func (secret JWTSecret) MarshalJSON() ([]byte, error) {
 func (secret *JWTSecret) UnmarshalJSON(data []byte) error {
 	type Alias JWTSecret
 	aux := &struct {
-		Expiration string `json:"expiration"`
+		Exp string `json:"exp"`
 		*Alias
 	}{
 		Alias: (*Alias)(secret),
@@ -70,10 +70,20 @@ func (secret *JWTSecret) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	duration, err := time.ParseDuration(aux.Expiration)
-	secret.Expiration = duration
+	duration, err := time.ParseDuration(aux.Exp)
+	secret.Exp = duration
 
 	return err
+}
+
+/***** Secret interface implementation ********************************************/
+
+func (secret *JWTSecret) Secret() []byte {
+	return secret.Key
+}
+
+func (secret *JWTSecret) Expiration() time.Duration {
+	return secret.Exp
 }
 
 /***** Datasource Document interface implementation *******************************/
@@ -83,11 +93,11 @@ func (secret *JWTSecret) Item() interface{} {
 	type Alias JWTSecret
 
 	item := &struct {
-		Expiration string `json:"expiration"`
+		Exp string `json:"exp"`
 		*Alias
 	}{
-		Expiration: secret.Expiration.String(),
-		Alias:      (*Alias)(secret),
+		Exp:   secret.Exp.String(),
+		Alias: (*Alias)(secret),
 	}
 
 	return item

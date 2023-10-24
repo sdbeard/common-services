@@ -18,3 +18,9 @@ go.sum
 .vscode
 .environ
 .env
+
+# vscode
+__debug_*
+
+# code
+*.bdb

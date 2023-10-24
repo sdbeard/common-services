@@ -30,7 +30,7 @@ import (
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/common-services/auth/types"
-	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
+	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
 )
 
 /**********************************************************************************/
@@ -38,33 +38,40 @@ import (
 func (auth *AuthService) initializeSecretsRouter(router *mux.Router, chain alice.Chain) {
 	secretsRouter := router.PathPrefix("/secrets").Subrouter()
 
-	secretsRouter.Methods("GET").Path("").Handler(chain.ThenFunc(auth.getSecrets))
+	//secretsRouter.Methods("GET").Path("").Handler(chain.ThenFunc(auth.getSecrets))
 	//router.Methods("GET").Path("/secrets").Handler(authChain.ThenFunc(auth.getSecrets))
 	//router.Methods("POST").Path("/secrets").Handler(authChain.ThenFunc(auth.addSecret))
-	//router.Methods("GET").Path("/secrets/{secretid}").Handler(authChain.ThenFUnc(auth.getSecret))
-	//router.Methods("PUT").Path("/secrets/{secretid}").Handler(authChain.ThenFunc(auth.updateSecret))
+	secretsRouter.Methods("GET").Path("/{secretid}").Handler(chain.ThenFunc(auth.getSecret))
+	//router.Methods("PUT").Path("/secrets/{secretid}").Handler(chain.ThenFunc(auth.updateSecret))
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 }
 
-func (auth *AuthService) getSecrets(res http.ResponseWriter, req *http.Request) {
+func (auth *AuthService) getSecret(res http.ResponseWriter, req *http.Request) {
 	if strings.Contains(req.RemoteAddr, "localhost") && strings.Contains("", "localhost") {
 		//Allow CORS here By * or specific origin
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	}
 
-	secrets, err := dataservice.GetAll[*types.JWTSecret](
-		dataservice.Request{
-			Dataplane: conf.Get().Dataplane,
-		},
+	vars := mux.Vars(req)
+	secretId := vars["secretid"]
+
+	manager, err := factory.SecretsManagerFactory[*types.JWTSecret](conf.Get().SecretsConf)
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	secret, err := manager.Retrieve(
+		manager.Retrieve.WithSecretName(secretId),
 	)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	auth.render.JSON(res, http.StatusOK, secrets)
+	auth.render.JSON(res, http.StatusOK, secret)
 }
 
 /**********************************************************************************/

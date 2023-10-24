@@ -25,27 +25,27 @@ package main
 import (
 	"mime"
 	"net/http"
+	"os"
+	"os/signal"
 	"path"
+	"syscall"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
-	"github.com/sdbeard/common-services/auth/middleware"
+	"github.com/sdbeard/common-services/auth/types"
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
+	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
-	//logger "github.com/sirupsen/logrus"
 )
 
 /**********************************************************************************/
 
-func NewAuthService(secretKey, servicePath string) (*AuthService, error) {
+func NewAuthService() (*AuthService, error) {
 	newService := &AuthService{
-		render:    render.New(),
-		secret:    []byte("secretkey"),
-		secretKey: secretKey,
-		path:      servicePath,
+		render: render.New(),
 	}
 
 	newService.RestService = rest.NewRestService(
@@ -61,17 +61,26 @@ func NewAuthService(secretKey, servicePath string) (*AuthService, error) {
 type AuthService struct {
 	*rest.RestService
 	render *render.Render
-	//stopChannel chan os.Signal
-	secret    []byte
-	secretKey string
-	path      string
+	secret *types.JWTSecret
 }
 
 /***** exported functions *********************************************************/
 
 // Start starts the running version of the API and is ready to receive requests
 func (auth *AuthService) Start() error {
-	return auth.StartSimple()
+	defer func() {
+		logger.Info("The hosting system has signaled the service to shutdown")
+		auth.Stop()
+	}()
+
+	stopChannel := auth.createStopChannel()
+
+	go auth.RestService.StartSimple()
+
+	<-stopChannel
+	close(stopChannel)
+
+	return nil
 }
 
 // Stop initiaties the graceful shutdown of the API's underlying rest service
@@ -83,7 +92,7 @@ func (auth *AuthService) Stop() {
 
 func (auth *AuthService) initializeRouter(router *mux.Router) {
 	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
-	authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
+	//authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		auth.render.JSON(res, http.StatusOK, "service called")
@@ -106,13 +115,26 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
-	auth.initializeSecretsRouter(router, authChain)
+	auth.initializeSecretsRouter(router, chain)
 
-	router.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:8000")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, DELETE, POST, PUT, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Access-Control-Request-Headers, Access-Control-Request-Method, Connection, Host, Origin, User-Agent, Referer, Cache-Control, X-header, Role")
-	})
+	//router.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	//	w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:8000")
+	//	w.Header().Set("Access-Control-Allow-Methods", "GET, DELETE, POST, PUT, OPTIONS")
+	//	w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Access-Control-Request-Headers, Access-Control-Request-Method, Connection, Host, Origin, User-Agent, Referer, Cache-Control, X-header, Role")
+	//})
+}
+
+func (auth *AuthService) createStopChannel() chan os.Signal {
+	stopChannel := make(chan os.Signal, 1)
+	signal.Notify(stopChannel,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+	)
+
+	return stopChannel
 }
 
 /*
@@ -190,17 +212,6 @@ func (auth *AuthService) adminIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write([]byte("Welcome, Admin."))
-}
-
-func (auth *AuthService) createStopChannel() {
-	auth.stopChannel = make(chan os.Signal, 1)
-	signal.Notify(auth.stopChannel,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-	)
 }
 */
 /**********************************************************************************/
