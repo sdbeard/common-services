@@ -23,28 +23,17 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"mime"
 	"net/http"
-	"os"
-	"os/signal"
 	"path"
-	"syscall"
 
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/common-services/auth/middleware"
-	"github.com/sdbeard/common-services/auth/secure"
-	"github.com/sdbeard/common-services/auth/types"
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
-	"github.com/sdbeard/go-supportlib/aws/service/dynamodb"
-	"github.com/sdbeard/go-supportlib/common/util"
-	"github.com/sdbeard/go-supportlib/data/types/dsapi"
-	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
 	"github.com/unrolled/render"
 	//logger "github.com/sirupsen/logrus"
 )
@@ -71,11 +60,11 @@ func NewAuthService(secretKey, servicePath string) (*AuthService, error) {
 
 type AuthService struct {
 	*rest.RestService
-	render      *render.Render
-	stopChannel chan os.Signal
-	secret      []byte
-	secretKey   string
-	path        string
+	render *render.Render
+	//stopChannel chan os.Signal
+	secret    []byte
+	secretKey string
+	path      string
 }
 
 /***** exported functions *********************************************************/
@@ -111,11 +100,13 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 
 	apitypes.BaselineAPI(router, chain)
 
-	router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(auth.enroll))
-	router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
-	router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
+	//router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(auth.enroll))
+	//router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
+	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
+
+	auth.initializeSecretsRouter(router, authChain)
 
 	router.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:8000")
@@ -124,6 +115,7 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 	})
 }
 
+/*
 func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
 	user := new(types.User)
 
@@ -210,5 +202,5 @@ func (auth *AuthService) createStopChannel() {
 		syscall.SIGINT,
 	)
 }
-
+*/
 /**********************************************************************************/
