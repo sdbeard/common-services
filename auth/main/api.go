@@ -200,7 +200,7 @@ func (auth *AuthService) adminIndex(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Welcome, Admin."))
 }
 
-func (auth *AuthService[TUser]) createStopChannel() {
+func (auth *AuthService) createStopChannel() {
 	auth.stopChannel = make(chan os.Signal, 1)
 	signal.Notify(auth.stopChannel,
 		os.Interrupt,

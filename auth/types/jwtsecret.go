@@ -24,15 +24,20 @@ package types
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
+
+	"github.com/sdbeard/go-supportlib/common/util"
 )
 
 /***** JWTSecret ******************************************************************/
 
 // JWTSecret holds the values for the JWT signing string and expiration
 type JWTSecret struct {
+	Previous   [][]byte      `json:"previous,omitempty"`
 	Key        []byte        `json:"key"`
 	Expiration time.Duration `json:"expiration"`
+	Name       string        `json:"name"`
 }
 
 /***** Marshaler interfaces *******************************************************/
@@ -70,5 +75,42 @@ func (secret *JWTSecret) UnmarshalJSON(data []byte) error {
 
 	return err
 }
+
+/***** Datasource Document interface implementation *******************************/
+
+// Item returns an object that represents the object to stored
+func (secret *JWTSecret) Item() interface{} {
+	type Alias JWTSecret
+
+	item := &struct {
+		Expiration string `json:"expiration"`
+		*Alias
+	}{
+		Expiration: secret.Expiration.String(),
+		Alias:      (*Alias)(secret),
+	}
+
+	return item
+}
+
+// ID returns the key/id to query and identify the event bus
+func (secret *JWTSecret) Id() string {
+	return strings.ToLower(secret.Name)
+}
+
+// Type returns the reflect Type representation of the current object
+func (secret *JWTSecret) Type() string {
+	return util.GetTypeName(secret)
+}
+
+// IdKey returns the specific key used to query an object by ID
+func (secret *JWTSecret) IdKey() string {
+	return ""
+}
+
+// Updates the state of the document if necessary
+func (secret *JWTSecret) Update(user string) {}
+
+/**********************************************************************************/
 
 /**********************************************************************************/
