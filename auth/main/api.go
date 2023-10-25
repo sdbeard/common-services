@@ -23,6 +23,7 @@
 package main
 
 import (
+	"encoding/json"
 	"mime"
 	"net/http"
 	"os"
@@ -33,10 +34,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
+	"github.com/sdbeard/common-services/auth/middleware"
+	"github.com/sdbeard/common-services/auth/secure"
 	"github.com/sdbeard/common-services/auth/types"
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
+	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
@@ -91,8 +95,8 @@ func (auth *AuthService) Stop() {
 /**********************************************************************************/
 
 func (auth *AuthService) initializeRouter(router *mux.Router) {
-	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
-	//authChain := alice.New(handlers.LoggingHandler, middleware.IsAuthorized, handlers.JSONContentTypeHandler)
+	chain := alice.New(middleware.IsInitialized, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
+	//authChain := alice.New(middleware.IsInitialized, middleware.IsAuthorized, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		auth.render.JSON(res, http.StatusOK, "service called")
@@ -109,7 +113,7 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 
 	apitypes.BaselineAPI(router, chain)
 
-	//router.Methods("POST").Path("/enroll").Handler(chain.ThenFunc(auth.enroll))
+	router.Methods("POST").Path("/init").Handler(chain.ThenFunc(auth.enroll))
 	//router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
 	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
@@ -137,34 +141,50 @@ func (auth *AuthService) createStopChannel() chan os.Signal {
 	return stopChannel
 }
 
-/*
 func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
-	user := new(types.User)
+	// Need to check if init file/flag has been set
+	enrollment := new(types.Enrollment)
 
-	err := json.NewDecoder(req.Body).Decode(&user)
+	err := json.NewDecoder(req.Body).Decode(&enrollment)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(user.Password)
+	hashedPassword, err := secure.GenerateHashPassword(enrollment.User.Password)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
-	user.Password = hashedPassword
+	enrollment.User.Password = hashedPassword
 
-	if err = dataservice.Add[*types.User](dataservice.Request{
+	// Save the role, user and secret
+
+	if err = dataservice.Add[*types.Role](dataservice.Request{
 		Dataplane: conf.Get().Dataplane,
-		Value:     user,
+		Value:     enrollment.Role,
 	}); err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	auth.render.JSON(res, http.StatusOK, fmt.Sprintf("successfully added %s", user.Id()))
+	if err = dataservice.Add[*types.User](dataservice.Request{
+		Dataplane: conf.Get().Dataplane,
+		Value:     enrollment.User,
+	}); err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err = auth.saveSecret(enrollment.Secret); err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	auth.render.JSON(res, http.StatusOK, "successfully initialized the service")
 }
 
+/*
 func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request) {
 	authDetails := new(types.Authentication)
 

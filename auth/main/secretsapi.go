@@ -23,6 +23,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -30,6 +31,7 @@ import (
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/common-services/auth/types"
+	"github.com/sdbeard/go-supportlib/secure/secrets"
 	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
 )
 
@@ -57,7 +59,7 @@ func (auth *AuthService) getSecret(res http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	secretId := vars["secretid"]
 
-	manager, err := factory.SecretsManagerFactory[*types.JWTSecret](conf.Get().SecretsConf)
+	manager, err := auth.getSecretsManager()
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
@@ -72,6 +74,26 @@ func (auth *AuthService) getSecret(res http.ResponseWriter, req *http.Request) {
 	}
 
 	auth.render.JSON(res, http.StatusOK, secret)
+}
+
+/**********************************************************************************/
+
+func (auth *AuthService) saveSecret(secret *types.JWTSecret) error {
+	manager, err := auth.getSecretsManager()
+	if err != nil {
+		return err
+	}
+
+	return manager.Create(
+		secret,
+		manager.Create.WithContext(context.TODO()),
+		manager.Create.WithSecret(secret),
+		manager.Create.WithAllowUpdate(true),
+	)
+}
+
+func (auth *AuthService) getSecretsManager() (*secrets.Manager[*types.JWTSecret], error) {
+	return factory.SecretsManagerFactory[*types.JWTSecret](conf.Get().SecretsConf)
 }
 
 /**********************************************************************************/
