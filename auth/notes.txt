@@ -1,3 +1,7 @@
+AUTH_APICONF=127.0.0.1@8000
+AUTH_LOGCONF=console@text@debug
+AUTH_SECRETSCONF=local://localdb://secrets.bdb@auth@@10000@@true@@bucket=auth
+
 AUTH_DATAPLANE=dynamodb://http://ddb.testlab.local@authuser@@true@region=us-east-2,hashkey=email
 AUTH_AWSCONF=http://localstack.testlab.local@us-east-2@@false@false
 AUTH_APICONF=127.0.0.1@8000
@@ -5,3 +9,27 @@ AUTH_LOGCONF=console@text@debug
 AWS_ACCESS_KEY=AKIAX6O6W4ZNW4UJP6T4
 AWS_SECRET_ACCESS_KEY=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
 AWS_DEFAULT_REGION=us-east-2
+
+func NewRouter() *mux.Router {
+  ->  router := mux.NewRouter().StrictSlash(true)
+  ->  router.NotFoundHandler = http.HandlerFunc(notFound)
+  ->  router.MethodNotAllowedHandler = http.HandlerFunc(notAllowed)
+    for _, route := range routes {
+        var handler http.Handler
+        if route.Secure {
+            handler = AuthMiddleware(route.HandlerFunc)
+        } else {
+            handler = route.HandlerFunc
+        }
+
+        handler = Logger(os.Stderr, handler)
+
+        router.
+            Methods(route.Method).
+            Path(route.Pattern).
+            Name(route.Name).
+            Handler(handler)
+    }
+
+    return router
+}

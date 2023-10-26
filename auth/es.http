@@ -1,0 +1,34 @@
+PUT http://es.testlab.local/auth?pretty
+Content-Type: application/json
+
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "type":{
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "id": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 32
+          }
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0
+    }
+  }
+}

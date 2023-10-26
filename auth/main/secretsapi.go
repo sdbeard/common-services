@@ -30,9 +30,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
-	"github.com/sdbeard/common-services/auth/types"
 	"github.com/sdbeard/go-supportlib/secure/secrets"
 	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
+	"github.com/sdbeard/go-supportlib/secure/types"
 )
 
 /**********************************************************************************/
@@ -78,7 +78,7 @@ func (auth *AuthService) getSecret(res http.ResponseWriter, req *http.Request) {
 
 /**********************************************************************************/
 
-func (auth *AuthService) saveSecret(secret *types.JWTSecret) error {
+func (auth *AuthService) saveSecret(secret *types.SimpleSecret) error {
 	manager, err := auth.getSecretsManager()
 	if err != nil {
 		return err
@@ -92,8 +92,8 @@ func (auth *AuthService) saveSecret(secret *types.JWTSecret) error {
 	)
 }
 
-func (auth *AuthService) getSecretsManager() (*secrets.Manager[*types.JWTSecret], error) {
-	return factory.SecretsManagerFactory[*types.JWTSecret](conf.Get().SecretsConf)
+func (auth *AuthService) getSecretsManager() (*secrets.Manager[*types.SimpleSecret], error) {
+	return factory.SecretsManagerFactory[*types.SimpleSecret](conf.Get().SecretsConf)
 }
 
 /**********************************************************************************/

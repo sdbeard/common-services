@@ -65,3 +65,44 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0c
 
 ###
 GET http://127.0.0.1:8000/secrets/test
+
+###
+GET http://127.0.0.1:8000/init
+Content-Type: application/json
+
+{
+  "role": {
+    "name": "sysadmin",
+    "description": "Role thatis the top-level administrator for the system",
+    "active": true,
+    "created": 1698333640
+  },
+  "user": {
+    "profile": {
+      "address": {
+        "addr1": "6146 Queenswood Lane",
+        "city": "Houston",
+        "state": "TX",
+        "country": "USA",
+        "postalcode": "77008"
+      },
+      "firstname": "Sean",
+      "lastname": "Beard",
+      "email": "kronedev@gmail.com",
+      "phone": "832-647-6520"
+    },
+    "username": "kronedev@gmail.com",
+    "password": "password",
+    "created": 1698333640
+  },
+  "jwtsecret": {
+    "name": "jwtkey",
+    "value": "star wars episode 1",
+    "expiry": "1h0m0s"
+  },
+  "sessionsecret": {
+    "name": "sessionkey",
+    "value": "super-secret-key",
+    "expiry": "1h0m0s"
+  }
+}

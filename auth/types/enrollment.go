@@ -22,13 +22,16 @@
 // *********************************************************************************
 package types
 
+import "github.com/sdbeard/go-supportlib/secure/types"
+
 /**********************************************************************************/
 
 func NewEnrollment() *Enrollment {
 	return &Enrollment{
-		Role:   &Role{},
-		User:   NewUser(),
-		Secret: &JWTSecret{},
+		Role:          &Role{},
+		User:          NewUser(),
+		JWTSecret:     &types.SimpleSecret{},
+		SessionSecret: &types.SimpleSecret{},
 	}
 }
 
@@ -37,9 +40,10 @@ func NewEnrollment() *Enrollment {
 // Enrollment represents the role, user and JWT secret is used to initialize the
 // service
 type Enrollment struct {
-	Role   *Role      `json:"role"`
-	User   *User      `json:"user"`
-	Secret *JWTSecret `json:"secret"`
+	Role          *Role               `json:"role"`
+	User          *User               `json:"user"`
+	JWTSecret     *types.SimpleSecret `json:"jwtsecret"`
+	SessionSecret *types.SimpleSecret `json:"sessionsecret"`
 }
 
 /***** exported functions *********************************************************/
@@ -47,7 +51,8 @@ type Enrollment struct {
 func (enroll *Enrollment) Update() {
 	enroll.Role.Update("")
 	enroll.User.Update("")
-	enroll.Secret.Update("")
+	enroll.JWTSecret.Update("")
+	enroll.SessionSecret.Update("")
 }
 
 /**********************************************************************************/

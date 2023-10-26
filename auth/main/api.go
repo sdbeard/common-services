@@ -41,6 +41,7 @@ import (
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
+	sectypes "github.com/sdbeard/go-supportlib/secure/types"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
@@ -65,7 +66,7 @@ func NewAuthService() (*AuthService, error) {
 type AuthService struct {
 	*rest.RestService
 	render *render.Render
-	secret *types.JWTSecret
+	secret *sectypes.SimpleSecret
 }
 
 /***** exported functions *********************************************************/
@@ -176,7 +177,12 @@ func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err = auth.saveSecret(enrollment.Secret); err != nil {
+	if err = auth.saveSecret(enrollment.JWTSecret); err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err = auth.saveSecret(enrollment.SessionSecret); err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
