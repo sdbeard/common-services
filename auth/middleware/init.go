@@ -42,7 +42,7 @@ func IsInitialized(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		render := render.New()
 
-		if !util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), initfile)) {
+		if util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), initfile)) {
 			next.ServeHTTP(res, req)
 			return
 		}
