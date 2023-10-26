@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/signal"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/gorilla/mux"
@@ -40,9 +41,15 @@ import (
 	"github.com/sdbeard/go-supportlib/api/handlers"
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
+	"github.com/sdbeard/go-supportlib/common/util"
+	"github.com/sdbeard/go-supportlib/data/types/common"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
+)
+
+var (
+// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 )
 
 /**********************************************************************************/
@@ -65,7 +72,6 @@ func NewAuthService() (*AuthService, error) {
 type AuthService struct {
 	*rest.RestService
 	render *render.Render
-	//secret *sectypes.SimpleSecret
 }
 
 /***** exported functions *********************************************************/
@@ -113,10 +119,11 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 
 	apitypes.BaselineAPI(router, chain)
 
-	router.Methods("POST").Path("/init").Handler(chain.ThenFunc(auth.enroll))
+	router.Methods("POST").Path("/init").Handler(chain.ThenFunc(auth.init))
+	router.Methods("GET").Path("/users").Handler(chain.ThenFunc(auth.getUsers))
+	router.Methods("POST").Path("/users").Handler(chain.ThenFunc(auth.addUser))
 	//router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
 	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
-	//router.Methods("GET").Path("/user").Handler(authChain.ThenFunc(authapi.userIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
 	auth.initializeSecretsRouter(router, chain)
@@ -141,10 +148,14 @@ func (auth *AuthService) createStopChannel() chan os.Signal {
 	return stopChannel
 }
 
-func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
-	// Need to check if init file/flag has been set
-	enrollment := new(types.Enrollment)
+func (auth *AuthService) init(res http.ResponseWriter, req *http.Request) {
+	//if isInitialized {
+	//	auth.render.JSON(res, http.StatusMethodNotAllowed, "the system has already been initialized, please authenticate with valid credentials")
+	//	return
+	//}
 
+	// Get the enrollment object
+	enrollment := new(types.Enrollment)
 	err := json.NewDecoder(req.Body).Decode(enrollment)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
@@ -158,8 +169,7 @@ func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
 	}
 	enrollment.User.Password = hashedPassword
 
-	// Save the role, user and secret
-
+	// Save the role and user
 	if err = dataservice.Add[*types.Role](dataservice.Request{
 		Dataplane: conf.Get().Dataplane,
 		Value:     enrollment.Role,
@@ -176,17 +186,66 @@ func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err = auth.saveSecret(enrollment.JWTSecret); err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	if err = auth.saveSecret(enrollment.SessionSecret); err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-
 	auth.render.JSON(res, http.StatusOK, "successfully initialized the service")
+}
+
+func (auth *AuthService) getUsers(res http.ResponseWriter, req *http.Request) {
+	if strings.Contains(req.RemoteAddr, "localhost") && strings.Contains("", "localhost") {
+		//Allow CORS here By * or specific origin
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+
+	//users, err := dataservice.GetAll[*types.User](dataservice.Request{
+	users, err := dataservice.Get[*types.User](dataservice.Request{
+		Dataplane: conf.Get().Dataplane,
+		Key:       "type",
+		Value:     util.GetTypeName(util.GetTypeObject[*types.User]()),
+	})
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	auth.render.JSON(res, http.StatusOK, users)
+}
+
+func (auth *AuthService) addUser(res http.ResponseWriter, req *http.Request) {
+	if strings.Contains(req.RemoteAddr, "localhost") && strings.Contains("", "localhost") {
+		//Allow CORS here By * or specific origin
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+
+	// Get the user object
+	user := new(types.User)
+	if err := json.NewDecoder(req.Body).Decode(user); err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	hashedPassword, err := secure.GenerateHashPassword(user.Password)
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+	user.Password = hashedPassword
+
+	if err := auth.save(user); err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	auth.render.JSON(res, http.StatusOK, user)
+}
+
+/**********************************************************************************/
+
+func (auth *AuthService) save(doc common.Document) error {
+	return dataservice.Add[common.Document](dataservice.Request{
+		Dataplane: conf.Get().Dataplane,
+		Value:     doc,
+	})
 }
 
 /*

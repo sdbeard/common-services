@@ -109,7 +109,7 @@ func (user *User) Item() interface{} {
 
 // ID returns the key/id to query and identify the event bus
 func (user *User) Id() string {
-	return ""
+	return user.Username
 }
 
 // Type returns the reflect Type representation of the current object

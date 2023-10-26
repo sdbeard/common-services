@@ -6,7 +6,7 @@ Content-Type: application/json
   "mappings": {
     "dynamic": "false",
     "properties": {
-      "userid":{
+      "id":{
         "type": "text",
         "fields": {
           "keyword": {
@@ -15,12 +15,12 @@ Content-Type: application/json
           }
         }
       },
-      "name": {
+      "type": {
         "type": "text",
         "fields": {
           "keyword": {
             "type": "keyword",
-            "ignore_above": 32
+            "ignore_above": 256
           }
         }
       }
@@ -39,6 +39,9 @@ GET http://127.0.0.1:8000/ping
 
 ###
 GET http://127.0.0.1:8000/mypath
+
+###
+GET http://127.0.0.1:8000/users
 
 ###
 POST http://127.0.0.1:8000/enroll
@@ -94,15 +97,5 @@ Content-Type: application/json
     "username": "kronedev@gmail.com",
     "password": "password",
     "created": 1698333640
-  },
-  "jwtsecret": {
-    "name": "jwtkey",
-    "value": "star wars episode 1",
-    "expiry": "1h0m0s"
-  },
-  "sessionsecret": {
-    "name": "sessionkey",
-    "value": "super-secret-key",
-    "expiry": "1h0m0s"
   }
 }

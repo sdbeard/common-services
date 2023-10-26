@@ -70,3 +70,5 @@ func NewRouter() *mux.Router {
     "expiry": "1h0m0s"
   }
 }
+
+https://stackoverflow.com/questions/62542897/how-to-use-gorilla-middleware-handlers-for-all-requests
