@@ -67,13 +67,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0c
 GET http://127.0.0.1:8000/secrets/test
 
 ###
-GET http://127.0.0.1:8000/init
+POST http://127.0.0.1:8000/init
 Content-Type: application/json
 
 {
   "role": {
     "name": "sysadmin",
-    "description": "Role thatis the top-level administrator for the system",
+    "description": "Role that is the top-level administrator for the system",
     "active": true,
     "created": 1698333640
   },

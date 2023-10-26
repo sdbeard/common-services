@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/justinas/alice v1.2.0
 	github.com/sdbeard/env/v7 v7.0.1
-	github.com/sdbeard/go-supportlib v0.0.0-20231026150445-519f834ddfcb
+	github.com/sdbeard/go-supportlib v0.0.0-20231026164717-905d68d1a404
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/render v1.6.1
 	golang.org/x/crypto v0.14.0
@@ -40,7 +40,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.10.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
-	github.com/google/uuid v1.3.1 // indirect
+	github.com/google/uuid v1.4.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect

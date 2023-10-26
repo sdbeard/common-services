@@ -145,7 +145,7 @@ func (auth *AuthService) enroll(res http.ResponseWriter, req *http.Request) {
 	// Need to check if init file/flag has been set
 	enrollment := new(types.Enrollment)
 
-	err := json.NewDecoder(req.Body).Decode(&enrollment)
+	err := json.NewDecoder(req.Body).Decode(enrollment)
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
