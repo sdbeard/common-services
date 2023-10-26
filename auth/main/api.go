@@ -41,7 +41,6 @@ import (
 	rest "github.com/sdbeard/go-supportlib/api/service"
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
-	sectypes "github.com/sdbeard/go-supportlib/secure/types"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
@@ -66,7 +65,7 @@ func NewAuthService() (*AuthService, error) {
 type AuthService struct {
 	*rest.RestService
 	render *render.Render
-	secret *sectypes.SimpleSecret
+	//secret *sectypes.SimpleSecret
 }
 
 /***** exported functions *********************************************************/
