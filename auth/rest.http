@@ -1,40 +1,4 @@
 ###
-PUT http://es.testlab.local/authuser?pretty
-Content-Type: application/json
-
-{
-  "mappings": {
-    "dynamic": "false",
-    "properties": {
-      "id":{
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      },
-      "type": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
-      }
-    }
-  },
-  "settings": {
-    "index": {
-      "number_of_shards": 3,
-      "number_of_replicas": 0
-    }
-  }
-}
-
-###
 GET http://127.0.0.1:8000/ping
 
 ###
@@ -42,6 +6,9 @@ GET http://127.0.0.1:8000/mypath
 
 ###
 GET http://127.0.0.1:8000/users
+
+###
+GET http://127.0.0.1:8000/roles
 
 ###
 POST http://127.0.0.1:8000/enroll

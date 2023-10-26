@@ -6,22 +6,10 @@ Content-Type: application/json
     "dynamic": "false",
     "properties": {
       "type":{
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 256
-          }
-        }
+        "type": "keyword"
       },
       "id": {
-        "type": "text",
-        "fields": {
-          "keyword": {
-            "type": "keyword",
-            "ignore_above": 32
-          }
-        }
+        "type": "keyword"
       }
     }
   },

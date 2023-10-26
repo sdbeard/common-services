@@ -43,6 +43,7 @@ import (
 	apitypes "github.com/sdbeard/go-supportlib/api/types"
 	"github.com/sdbeard/go-supportlib/common/util"
 	"github.com/sdbeard/go-supportlib/data/types/common"
+	"github.com/sdbeard/go-supportlib/data/types/dsapi"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
@@ -121,7 +122,8 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 
 	router.Methods("POST").Path("/init").Handler(chain.ThenFunc(auth.init))
 	router.Methods("GET").Path("/users").Handler(chain.ThenFunc(auth.getUsers))
-	router.Methods("POST").Path("/users").Handler(chain.ThenFunc(auth.addUser))
+	//router.Methods("POST").Path("/users").Handler(chain.ThenFunc(auth.addUser))
+	router.Methods("GET").Path("/roles").Handler(chain.ThenFunc(auth.getRoles))
 	//router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
 	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
@@ -198,9 +200,10 @@ func (auth *AuthService) getUsers(res http.ResponseWriter, req *http.Request) {
 
 	//users, err := dataservice.GetAll[*types.User](dataservice.Request{
 	users, err := dataservice.Get[*types.User](dataservice.Request{
-		Dataplane: conf.Get().Dataplane,
-		Key:       "type",
-		Value:     util.GetTypeName(util.GetTypeObject[*types.User]()),
+		Dataplane:  conf.Get().Dataplane,
+		Key:        "type",
+		Value:      util.GetTypeName(util.GetTypeObject[*types.User]()),
+		Comparator: dsapi.EQ,
 	})
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
@@ -237,6 +240,28 @@ func (auth *AuthService) addUser(res http.ResponseWriter, req *http.Request) {
 	}
 
 	auth.render.JSON(res, http.StatusOK, user)
+}
+
+func (auth *AuthService) getRoles(res http.ResponseWriter, req *http.Request) {
+	if strings.Contains(req.RemoteAddr, "localhost") && strings.Contains("", "localhost") {
+		//Allow CORS here By * or specific origin
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+
+	//users, err := dataservice.GetAll[*types.User](dataservice.Request{
+	roles, err := dataservice.Get[*types.Role](dataservice.Request{
+		Dataplane:  conf.Get().Dataplane,
+		Key:        "type",
+		Value:      util.GetTypeName(types.Role{}),
+		Comparator: dsapi.EQ,
+	})
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	auth.render.JSON(res, http.StatusOK, roles)
 }
 
 /**********************************************************************************/
