@@ -31,7 +31,7 @@ POST http://127.0.0.1:8000/auth
 
 ###
 GET http://127.0.0.1:8000/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2OTg1MTEwNTd9.05e-hDGB-j5wkcNfJAgGZrrfhZc9Uo4gq33vkUow9XE
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdXRob3JpemVkIjp0cnVlLCJleHAiOjE2OTg1MTI1OTUsInJvbGVzIjpbInN5c2FkbWluIl0sInN1YiI6Imtyb25lZGV2QGdtYWlsLmNvbSJ9.ql1I4cpXLgc6m7e8BQKiv-8EqMppU_vcU5qwSN3mLNE
 
 ###
 GET http://127.0.0.1:8000/secrets/test
