@@ -50,7 +50,9 @@ import (
 )
 
 var (
-// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
+	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
+	// TODO: Replace with secret from secrets manager
+	secretKey = []byte("your-secret-key")
 )
 
 /**********************************************************************************/
@@ -103,7 +105,7 @@ func (auth *AuthService) Stop() {
 
 func (auth *AuthService) initializeRouter(router *mux.Router) {
 	chain := alice.New(middleware.IsInitialized, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
-	//authChain := alice.New(middleware.IsInitialized, middleware.IsAuthorized, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
+	authChain := alice.New(middleware.Authorization, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		auth.render.JSON(res, http.StatusOK, "service called")
@@ -121,10 +123,10 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 	apitypes.BaselineAPI(router, chain)
 
 	router.Methods("POST").Path("/init").Handler(chain.ThenFunc(auth.init))
-	router.Methods("GET").Path("/users").Handler(chain.ThenFunc(auth.getUsers))
-	//router.Methods("POST").Path("/users").Handler(chain.ThenFunc(auth.addUser))
+	router.Methods("GET").Path("/users").Handler(authChain.ThenFunc(auth.getUsers))
+	router.Methods("POST").Path("/users").Handler(chain.ThenFunc(auth.addUser))
 	router.Methods("GET").Path("/roles").Handler(chain.ThenFunc(auth.getRoles))
-	//router.Methods("POST").Path("/authenticate").Handler(chain.ThenFunc(auth.authenticate))
+	router.Methods("POST").Path("/auth").Handler(chain.ThenFunc(auth.authenticate))
 	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
@@ -137,24 +139,12 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 	//})
 }
 
-func (auth *AuthService) createStopChannel() chan os.Signal {
-	stopChannel := make(chan os.Signal, 1)
-	signal.Notify(stopChannel,
-		os.Interrupt,
-		syscall.SIGTERM,
-		syscall.SIGQUIT,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-	)
-
-	return stopChannel
-}
-
 func (auth *AuthService) init(res http.ResponseWriter, req *http.Request) {
-	//if isInitialized {
-	//	auth.render.JSON(res, http.StatusMethodNotAllowed, "the system has already been initialized, please authenticate with valid credentials")
-	//	return
-	//}
+	if strings.Contains(req.RemoteAddr, "localhost") && strings.Contains("", "localhost") {
+		//Allow CORS here By * or specific origin
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
 
 	// Get the enrollment object
 	enrollment := new(types.Enrollment)
@@ -164,31 +154,48 @@ func (auth *AuthService) init(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(enrollment.User.Password)
-	if err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-	enrollment.User.Password = hashedPassword
-
 	// Save the role and user
-	if err = dataservice.Add[*types.Role](dataservice.Request{
-		Dataplane: conf.Get().Dataplane,
-		Value:     enrollment.Role,
-	}); err != nil {
+	if err = auth.save(enrollment.Role); err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	if err = dataservice.Add[*types.User](dataservice.Request{
-		Dataplane: conf.Get().Dataplane,
-		Value:     enrollment.User,
-	}); err != nil {
+	if err := auth.saveUser(enrollment.User); err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	auth.render.JSON(res, http.StatusOK, "successfully initialized the service")
+}
+
+func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request) {
+	credentials := new(types.Authentication)
+	err := json.NewDecoder(req.Body).Decode(credentials)
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user, err := auth.getUser(credentials.Username)
+	if err != nil {
+		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if check := secure.CheckPasswordHash(credentials.Password, user.Password); !check {
+		auth.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
+		return
+	}
+
+	token, err := secure.GenerateJWT(secretKey, user.Claims)
+	if err != nil {
+		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
+		return
+	}
+
+	//TODO: Add the token to a gorilla session
+
+	auth.render.JSON(res, http.StatusOK, token)
 }
 
 func (auth *AuthService) getUsers(res http.ResponseWriter, req *http.Request) {
@@ -198,12 +205,8 @@ func (auth *AuthService) getUsers(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	}
 
-	//users, err := dataservice.GetAll[*types.User](dataservice.Request{
-	users, err := dataservice.Get[*types.User](dataservice.Request{
-		Dataplane:  conf.Get().Dataplane,
-		Key:        "type",
-		Value:      util.GetTypeName(util.GetTypeObject[*types.User]()),
-		Comparator: dsapi.EQ,
+	users, err := dataservice.GetAll[*types.User](dataservice.Request{
+		Dataplane: conf.Get().Dataplanes[util.GetTypeName(types.User{})],
 	})
 	if err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
@@ -227,14 +230,7 @@ func (auth *AuthService) addUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashedPassword, err := secure.GenerateHashPassword(user.Password)
-	if err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-	user.Password = hashedPassword
-
-	if err := auth.save(user); err != nil {
+	if err := auth.saveUser(user); err != nil {
 		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -251,7 +247,7 @@ func (auth *AuthService) getRoles(res http.ResponseWriter, req *http.Request) {
 
 	//users, err := dataservice.GetAll[*types.User](dataservice.Request{
 	roles, err := dataservice.Get[*types.Role](dataservice.Request{
-		Dataplane:  conf.Get().Dataplane,
+		Dataplane:  conf.Get().Dataplanes[util.GetTypeName(types.Role{})],
 		Key:        "type",
 		Value:      util.GetTypeName(types.Role{}),
 		Comparator: dsapi.EQ,
@@ -266,61 +262,45 @@ func (auth *AuthService) getRoles(res http.ResponseWriter, req *http.Request) {
 
 /**********************************************************************************/
 
+func (auth *AuthService) getUser(userId string) (*types.User, error) {
+	return dataservice.GetItem[*types.User](dataservice.Request{
+		Dataplane:  conf.Get().Dataplanes[util.GetTypeName(types.User{})],
+		Key:        "id",
+		Value:      userId,
+		Comparator: dsapi.EQ,
+	})
+}
+
 func (auth *AuthService) save(doc common.Document) error {
 	return dataservice.Add[common.Document](dataservice.Request{
-		Dataplane: conf.Get().Dataplane,
+		Dataplane: conf.Get().Dataplanes[util.GetTypeName(doc)],
 		Value:     doc,
 	})
 }
 
-/*
-func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request) {
-	authDetails := new(types.Authentication)
-
-	err := json.NewDecoder(req.Body).Decode(authDetails)
+func (auth *AuthService) saveUser(user *types.User) error {
+	// Set the hashed password for the user
+	hashedPassword, err := secure.GenerateHashPassword(user.Password)
 	if err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
+		return err
 	}
+	user.Password = hashedPassword
 
-	tags := dynamodb.ProcessDynamoTags(util.GetTypeObject[TUser]())
-	hashKey, _ := tags.HashKey()
-	if hashKey == "" {
-		hashKey = conf.Get().Dataplane.Parameters["hashkey"].(string)
-	}
-
-	authUser, err := dataservice.GetItem[*types.User](dataservice.Request{
-		Dataplane:  conf.Get().Dataplane,
-		Key:        hashKey,
-		Value:      authDetails.Username,
-		Comparator: dsapi.EQ,
-	})
-	if err != nil {
-		auth.render.JSON(res, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	check := secure.CheckPasswordHash(authDetails.Password, authUser.Password)
-	if !check {
-		auth.render.JSON(res, http.StatusUnauthorized, "username or password is incorrect")
-		return
-	}
-
-	validToken, err := secure.GenerateJWT(auth.secret, authUser.Claims)
-	if err != nil {
-		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
-		return
-	}
-
-	auth.render.JSON(res, http.StatusOK, validToken)
+	// Save the user
+	return auth.save(user)
 }
 
-func (auth *AuthService) adminIndex(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Role") != "admin" {
-		w.Write([]byte("Not authorized."))
-		return
-	}
-	w.Write([]byte("Welcome, Admin."))
+func (auth *AuthService) createStopChannel() chan os.Signal {
+	stopChannel := make(chan os.Signal, 1)
+	signal.Notify(stopChannel,
+		os.Interrupt,
+		syscall.SIGTERM,
+		syscall.SIGQUIT,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+	)
+
+	return stopChannel
 }
-*/
+
 /**********************************************************************************/

@@ -35,7 +35,8 @@ import (
 func NewUser() *User {
 	return &User{
 		Profile: new(UserProfile),
-		Claims:  make([]string, 0),
+		Claims:  make(map[string]interface{}),
+		Roles:   make([]string, 0),
 		Created: time.Now(),
 	}
 }
@@ -44,11 +45,13 @@ func NewUser() *User {
 
 // AuthUser
 type User struct {
-	Profile  *UserProfile `json:"profile,omitempty"`
-	Username string       `json:"username"`
-	Password string       `json:"password"`
-	Claims   []string     `json:"claims,omitempty"`
-	Created  time.Time    `json:"created"`
+	Profile      *UserProfile           `json:"profile,omitempty"`
+	Claims       map[string]interface{} `json:"claims,omitempty"`
+	Roles        []string               `json:"roles"`
+	Created      time.Time              `json:"created"`
+	Username     string                 `json:"username"`
+	Password     string                 `json:"password"`
+	Organization string                 `json:"org"`
 }
 
 /***** Marshaler interfaces *******************************************************/
