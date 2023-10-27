@@ -26,22 +26,26 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sdbeard/common-services/auth/types"
 )
 
 /***** exported functions *********************************************************/
 
 // GenerateJWT created the
-func GenerateJWT(secret []byte, userClaims map[string]interface{}) (string, error) {
-	token := jwt.New(jwt.SigningMethodHS256)
-
+func GenerateJWT(secret []byte, user *types.User) (string, error) {
 	// Create the claims for the user token
-	claims := token.Claims.(jwt.MapClaims)
-	claims["authorized"] = true
-	claims["exp"] = time.Now().Add(1 * time.Hour * 24).Unix()
-	for key, value := range userClaims {
+	claims := jwt.MapClaims{
+		"sub":        user.Id(),
+		"roles":      user.Roles,
+		"authorized": true,
+		"exp":        time.Now().Add(1 * time.Hour * 24).Unix(),
+	}
+
+	for key, value := range user.Claims {
 		claims[key] = value
 	}
 
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secret)
 }
 

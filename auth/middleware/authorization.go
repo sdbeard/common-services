@@ -26,7 +26,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	logger "github.com/sirupsen/logrus"
@@ -60,18 +59,18 @@ func Authorization(next http.Handler) http.Handler {
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			req.Header.Set("Role", claims["role"].(string))
-			next.ServeHTTP(res, req)
+		if !token.Valid {
+			render.JSON(res, http.StatusUnauthorized, "not authorized")
 			return
 		}
 
-		render.JSON(res, http.StatusUnauthorized, "not authorized")
+		next.ServeHTTP(res, req)
 	})
 }
 
 /**********************************************************************************/
 
+/*
 func generateJWT(userID string, roles []string) (string, error) {
 	claims := jwt.MapClaims{
 		"sub":   userID,
@@ -82,6 +81,7 @@ func generateJWT(userID string, roles []string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secretKey)
 }
+*/
 
 func getTokenFromHeader(req *http.Request) string {
 	authHeader := req.Header.Get("Authorization")
