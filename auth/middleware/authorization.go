@@ -70,19 +70,6 @@ func Authorization(next http.Handler) http.Handler {
 
 /**********************************************************************************/
 
-/*
-func generateJWT(userID string, roles []string) (string, error) {
-	claims := jwt.MapClaims{
-		"sub":   userID,
-		"roles": roles,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(), // Token expires in 24 hours
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secretKey)
-}
-*/
-
 func getTokenFromHeader(req *http.Request) string {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
