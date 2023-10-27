@@ -104,7 +104,7 @@ func (auth *AuthService) Stop() {
 /**********************************************************************************/
 
 func (auth *AuthService) initializeRouter(router *mux.Router) {
-	chain := alice.New(middleware.IsInitialized, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
+	chain := alice.New(handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 	authChain := alice.New(middleware.Authorization, handlers.LoggingHandler, handlers.JSONContentTypeHandler)
 
 	router.Handle("/", chain.Then(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
