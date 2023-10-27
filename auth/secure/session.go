@@ -23,48 +23,47 @@
 package secure
 
 import (
-	"time"
+	"fmt"
+	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/sdbeard/common-services/auth/types"
+	"github.com/gorilla/sessions"
+	"github.com/sdbeard/go-supportlib/common/util"
 )
 
-/***** exported functions *********************************************************/
+var (
+	store       *sessions.CookieStore
+	sessionName string
+)
 
-// GenerateJWT created the
-func GenerateJWT(secret []byte, user *types.User) (string, error) {
-	// Create the claims for the user token
-	claims := jwt.MapClaims{
-		"sub":        user.Id(),
-		"roles":      user.Roles,
-		"authorized": true,
-		"exp":        time.Now().Add(1 * time.Hour * 4).Unix(),
-	}
+/**********************************************************************************/
 
-	for key, value := range user.Claims {
-		claims[key] = value
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+func InitSession(secret []byte, name string) {
+	store = sessions.NewCookieStore(secret)
+	sessionName = name
 }
 
-// GenerateJWT created the
-func GenerateRefreshJWT(secret []byte, user *types.User) (string, error) {
-	// Create the claims for the user token
-	claims := jwt.MapClaims{
-		"sub":        user.Id(),
-		"roles":      user.Roles,
-		"authorized": true,
-		"exp":        time.Now().Add(1 * time.Hour * 4).Unix(),
+func GetSessionValue[TValue any](req *http.Request, key string) (TValue, error) {
+	session, err := store.Get(req, sessionName)
+	if err != nil {
+		return util.GetTypeObject[TValue](), err
 	}
 
-	for key, value := range user.Claims {
-		claims[key] = value
+	value, ok := session.Values[key].(TValue)
+	if !ok {
+		return util.GetTypeObject[TValue](), fmt.Errorf("missing session")
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secret)
+	return value, nil
+}
+
+func SetSessionValue(req *http.Request, res http.ResponseWriter, key string, value interface{}) error {
+	session, err := store.Get(req, sessionName)
+	if err != nil {
+		return err
+	}
+
+	session.Values[key] = value
+	return session.Save(req, res)
 }
 
 /**********************************************************************************/

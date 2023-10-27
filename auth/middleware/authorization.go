@@ -28,12 +28,13 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sdbeard/common-services/auth/secure"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
 
 // TODO: Replace with secret from secrets manager
-var secretKey = []byte("your-secret-key")
+var secretKey = []byte("another-secret-key")
 
 // Cookies
 // https://golang.ch/how-to-work-with-cookies-in-golang/#:~:text=Basic%20usage%20of%20Cookies%20with%20Golang%201%20Name,SameSite%20constants%20from%20the%20net%2Fhttp%20package.%20More%20items
@@ -42,7 +43,7 @@ func Authorization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		render := render.New()
 
-		authToken := getTokenFromHeader(req)
+		authToken := getTokenFromSession(req)
 		if authToken == "" {
 			render.JSON(res, http.StatusUnauthorized, "no authorization information found")
 			return
@@ -55,7 +56,7 @@ func Authorization(next http.Handler) http.Handler {
 			return secretKey, nil
 		})
 		if err != nil {
-			render.JSON(res, http.StatusInternalServerError, "your token has expired")
+			render.JSON(res, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -69,6 +70,16 @@ func Authorization(next http.Handler) http.Handler {
 }
 
 /**********************************************************************************/
+
+func getTokenFromSession(req *http.Request) string {
+	token, err := secure.GetSessionValue[string](req, "jwt")
+	if err == nil {
+		return token
+	}
+
+	// TODO:  Need to find a away to process the error
+	return getTokenFromHeader(req)
+}
 
 func getTokenFromHeader(req *http.Request) string {
 	authHeader := req.Header.Get("Authorization")

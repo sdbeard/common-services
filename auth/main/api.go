@@ -33,6 +33,7 @@ import (
 	"syscall"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/common-services/auth/middleware"
@@ -52,7 +53,10 @@ import (
 var (
 	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 	// TODO: Replace with secret from secrets manager
-	secretKey = []byte("your-secret-key")
+	secretKey    = []byte("your-secret-key")
+	store        = sessions.NewCookieStore(secretKey)
+	sessionName  = "auth-session"
+	jwtSecretKey = []byte("another-secret-key")
 )
 
 /**********************************************************************************/
@@ -67,6 +71,7 @@ func NewAuthService() (*AuthService, error) {
 		newService.initializeRouter,
 	)
 
+	secure.InitSession(secretKey, sessionName)
 	return newService, nil
 }
 
@@ -187,13 +192,17 @@ func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	token, err := secure.GenerateJWT(secretKey, user)
+	token, err := secure.GenerateJWT(jwtSecretKey, user)
 	if err != nil {
 		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
 	}
 
-	//TODO: Add the token to a gorilla session
+	// Add the token to a gorilla session
+	if err := secure.SetSessionValue(req, res, "jwt", token); err != nil {
+		auth.render.JSON(res, http.StatusUnauthorized, err.Error())
+		return
+	}
 
 	auth.render.JSON(res, http.StatusOK, token)
 }

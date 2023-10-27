@@ -5,6 +5,7 @@ go 1.21
 require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/sessions v1.2.1
 	github.com/joho/godotenv v1.5.1
 	github.com/justinas/alice v1.2.0
 	github.com/sdbeard/env/v7 v7.0.1
@@ -41,6 +42,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/google/uuid v1.4.0 // indirect
+	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect
