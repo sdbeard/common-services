@@ -31,9 +31,9 @@ import (
 	"path"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 	"github.com/justinas/alice"
 	"github.com/sdbeard/common-services/auth/conf"
 	"github.com/sdbeard/common-services/auth/middleware"
@@ -53,10 +53,10 @@ import (
 var (
 	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 	// TODO: Replace with secret from secrets manager
-	secretKey    = []byte("your-secret-key")
-	store        = sessions.NewCookieStore(secretKey)
-	sessionName  = "auth-session"
-	jwtSecretKey = []byte("another-secret-key")
+	secretKey           = []byte("your-secret-key")
+	sessionName         = "auth-session"
+	jwtSecretKey        = []byte("another-secret-key")
+	jwtRefreshSecretKey = []byte("another-secret-key")
 )
 
 /**********************************************************************************/
@@ -203,6 +203,20 @@ func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request
 		auth.render.JSON(res, http.StatusUnauthorized, err.Error())
 		return
 	}
+
+	refreshToken, err := secure.GenerateRefreshJWT(jwtRefreshSecretKey, user)
+	if err != nil {
+		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate refresh token")
+		return
+	}
+
+	cookie := http.Cookie{
+		Name:     "auth-refresh",
+		Value:    refreshToken,
+		HttpOnly: true,
+		Expires:  time.Now().Add(24 * time.Hour),
+	}
+	http.SetCookie(res, &cookie)
 
 	auth.render.JSON(res, http.StatusOK, token)
 }

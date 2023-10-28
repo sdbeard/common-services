@@ -38,7 +38,7 @@ func GenerateJWT(secret []byte, user *types.User) (string, error) {
 		"sub":        user.Id(),
 		"roles":      user.Roles,
 		"authorized": true,
-		"exp":        time.Now().Add(1 * time.Hour * 4).Unix(),
+		"exp":        time.Now().Add(1 * time.Minute).Unix(),
 	}
 
 	for key, value := range user.Claims {
@@ -56,7 +56,7 @@ func GenerateRefreshJWT(secret []byte, user *types.User) (string, error) {
 		"sub":        user.Id(),
 		"roles":      user.Roles,
 		"authorized": true,
-		"exp":        time.Now().Add(1 * time.Hour * 4).Unix(),
+		"exp":        time.Now().Add(1 * time.Hour * 24).Unix(),
 	}
 
 	for key, value := range user.Claims {
