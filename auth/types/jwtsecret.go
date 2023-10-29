@@ -34,7 +34,7 @@ import (
 
 // JWTSecret holds the values for the JWT signing string and expiration
 type JWTSecret struct {
-	Previous [][]byte      `json:"previous,omitempty"`
+	Previous []byte        `json:"previous,omitempty"`
 	Key      []byte        `json:"key"`
 	Exp      time.Duration `json:"exp"`
 	Name     string        `json:"name"`
@@ -80,6 +80,12 @@ func (secret *JWTSecret) UnmarshalJSON(data []byte) error {
 
 func (secret *JWTSecret) Secret() []byte {
 	return secret.Key
+}
+
+// Previous returns the previous key to check for exisitng jwts encoded with
+// previous secret
+func (secret *JWTSecret) PreviousSEcret() []byte {
+	return secret.Previous
 }
 
 func (secret *JWTSecret) Expiration() time.Duration {
