@@ -325,17 +325,17 @@ func (auth *AuthService) saveUser(user *types.User) error {
 
 func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
 	// Retrieve the jwt secret and refresh keys
-	jwtSecret, err := getSecret("jwtSecretKey", true)
+	jwtSecret, err := getSecret("jwtsecretkey", true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	jwtRefreshSecret, err := getSecret("jwtRefreshSecretKey", true)
+	jwtRefreshSecret, err := getSecret("jwtrefreshsecretkey", true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	sessionSecret, err := getSecret("sessionKey", true)
+	sessionSecret, err := getSecret("sessionkey", true)
 	if err != nil {
 		return nil, nil, nil, err
 	}
