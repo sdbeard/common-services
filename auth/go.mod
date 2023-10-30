@@ -9,7 +9,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/justinas/alice v1.2.0
 	github.com/sdbeard/env/v7 v7.0.1
-	github.com/sdbeard/go-supportlib v0.0.0-20231030142001-a2af71c14332
+	github.com/sdbeard/go-supportlib v0.0.0-20231030150348-02784ab13ca5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/unrolled/render v1.6.1
 	golang.org/x/crypto v0.14.0
@@ -46,8 +46,8 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/rs/xid v1.5.0 // indirect
-	github.com/sdbeard/bolt v1.4.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
+	go.etcd.io/bbolt v1.3.8 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
