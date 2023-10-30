@@ -23,6 +23,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"mime"
 	"net/http"
@@ -55,8 +56,6 @@ import (
 
 var (
 	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
-	// TODO: Replace with secret from secrets manager
-	secretKey   = []byte("your-secret-key")
 	sessionName = "auth-session"
 )
 
@@ -64,12 +63,7 @@ var (
 
 func NewAuthService() (*AuthService, error) {
 	// Retrieve the jwt secret and refresh keys
-	jwtSecret, err := getKey("jwtSecretKey")
-	if err != nil {
-		return nil, err
-	}
-
-	jwtRefreshSecret, err := getKey("jwtRefreshSecretKey")
+	jwtSecret, jwtRefreshSecret, sessionSecret, err := getAuthServiceSecrets()
 	if err != nil {
 		return nil, err
 	}
@@ -85,23 +79,9 @@ func NewAuthService() (*AuthService, error) {
 		newService.initializeRouter,
 	)
 
-	secure.InitSession(secretKey, sessionName)
+	secure.InitSession(sessionSecret.Secret(), sessionName)
+
 	return newService, nil
-}
-
-func getKey(keyName string) (*sectypes.SimpleSecret, error) {
-	manager, err := getSecretsManager()
-	if err != nil {
-		return nil, err
-	}
-
-	return manager.Retrieve(
-		manager.Retrieve.WithSecretName(keyName),
-	)
-}
-
-func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
-	return factory.SecretsManagerFactory[*sectypes.SimpleSecret](conf.Get().SecretsConf)
 }
 
 /**********************************************************************************/
@@ -342,6 +322,61 @@ func (auth *AuthService) saveUser(user *types.User) error {
 
 	// Save the user
 	return auth.save(user)
+}
+
+func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
+	// Retrieve the jwt secret and refresh keys
+	jwtSecret, err := getSecret("jwtSecretKey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	jwtRefreshSecret, err := getSecret("jwtRefreshSecretKey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	sessionSecret, err := getSecret("sessionKey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return jwtSecret, jwtRefreshSecret, sessionSecret, nil
+}
+
+func getSecret(secretId string, createIfMissing bool) (*sectypes.SimpleSecret, error) {
+	manager, err := getSecretsManager()
+	if err != nil {
+		return nil, err
+	}
+
+	secret, err := manager.Retrieve(
+		manager.Retrieve.WithSecretName(secretId),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if secret.Id() == "" && createIfMissing {
+		return createSecret(manager, secretId)
+	}
+
+	return secret, nil
+}
+
+func createSecret(manager *secrets.Manager[*sectypes.SimpleSecret], secretName string) (*sectypes.SimpleSecret, error) {
+	secret := sectypes.NewSimpleSecret(secretName, 16, 60)
+	err := manager.Create(
+		secret,
+		manager.Create.WithContext(context.TODO()),
+		manager.Create.WithAllowUpdate(false),
+	)
+
+	return secret, err
+}
+
+func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
+	return factory.SecretsManagerFactory[*sectypes.SimpleSecret](conf.Get().SecretsConf)
 }
 
 func (auth *AuthService) createStopChannel() chan os.Signal {
