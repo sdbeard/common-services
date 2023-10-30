@@ -46,6 +46,9 @@ import (
 	"github.com/sdbeard/go-supportlib/data/types/common"
 	"github.com/sdbeard/go-supportlib/data/types/dsapi"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
+	"github.com/sdbeard/go-supportlib/secure/secrets"
+	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
+	sectypes "github.com/sdbeard/go-supportlib/secure/types"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
 )
@@ -53,17 +56,28 @@ import (
 var (
 	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 	// TODO: Replace with secret from secrets manager
-	secretKey           = []byte("your-secret-key")
-	sessionName         = "auth-session"
-	jwtSecretKey        = []byte("another-secret-key")
-	jwtRefreshSecretKey = []byte("another-secret-key")
+	secretKey   = []byte("your-secret-key")
+	sessionName = "auth-session"
 )
 
 /**********************************************************************************/
 
 func NewAuthService() (*AuthService, error) {
+	// Retrieve the jwt secret and refresh keys
+	jwtSecret, err := getKey("jwtSecretKey")
+	if err != nil {
+		return nil, err
+	}
+
+	jwtRefreshSecret, err := getKey("jwtRefreshSecretKey")
+	if err != nil {
+		return nil, err
+	}
+
 	newService := &AuthService{
-		render: render.New(),
+		render:           render.New(),
+		jwtSecret:        jwtSecret,
+		jwtRefreshSecret: jwtRefreshSecret,
 	}
 
 	newService.RestService = rest.NewRestService(
@@ -75,11 +89,28 @@ func NewAuthService() (*AuthService, error) {
 	return newService, nil
 }
 
+func getKey(keyName string) (*sectypes.SimpleSecret, error) {
+	manager, err := getSecretsManager()
+	if err != nil {
+		return nil, err
+	}
+
+	return manager.Retrieve(
+		manager.Retrieve.WithSecretName(keyName),
+	)
+}
+
+func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
+	return factory.SecretsManagerFactory[*sectypes.SimpleSecret](conf.Get().SecretsConf)
+}
+
 /**********************************************************************************/
 
 type AuthService struct {
 	*rest.RestService
-	render *render.Render
+	render           *render.Render
+	jwtSecret        *sectypes.SimpleSecret
+	jwtRefreshSecret *sectypes.SimpleSecret
 }
 
 /***** exported functions *********************************************************/
@@ -135,7 +166,7 @@ func (auth *AuthService) initializeRouter(router *mux.Router) {
 	//router.Methods("GET").Path("/admin").Handler(authChain.ThenFunc(auth.adminIndex))
 	//router.Methods("GET").Path("/index").Handler(alice.New().ThenFunc(authapi.index))
 
-	auth.initializeSecretsRouter(router, chain)
+	//auth.initializeSecretsRouter(router, chain)
 
 	//router.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	//	w.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:8000")
@@ -192,7 +223,7 @@ func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	token, err := secure.GenerateJWT(jwtSecretKey, user)
+	token, err := secure.GenerateJWT(auth.jwtSecret.Secret(), user)
 	if err != nil {
 		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return
@@ -204,7 +235,7 @@ func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	refreshToken, err := secure.GenerateRefreshJWT(jwtRefreshSecretKey, user)
+	refreshToken, err := secure.GenerateRefreshJWT(auth.jwtRefreshSecret.Secret(), user)
 	if err != nil {
 		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate refresh token")
 		return

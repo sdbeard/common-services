@@ -22,21 +22,9 @@
 // *********************************************************************************
 package main
 
-import (
-	"context"
-	"net/http"
-	"strings"
-
-	"github.com/gorilla/mux"
-	"github.com/justinas/alice"
-	"github.com/sdbeard/common-services/auth/conf"
-	"github.com/sdbeard/go-supportlib/secure/secrets"
-	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
-	"github.com/sdbeard/go-supportlib/secure/types"
-)
-
 /**********************************************************************************/
 
+/*
 func (auth *AuthService) initializeSecretsRouter(router *mux.Router, chain alice.Chain) {
 	secretsRouter := router.PathPrefix("/secrets").Subrouter()
 
@@ -75,9 +63,11 @@ func (auth *AuthService) getSecret(res http.ResponseWriter, req *http.Request) {
 
 	auth.render.JSON(res, http.StatusOK, secret)
 }
+*/
 
 /**********************************************************************************/
 
+/*
 func (auth *AuthService) saveSecret(secret *types.SimpleSecret) error {
 	manager, err := auth.getSecretsManager()
 	if err != nil {
@@ -95,5 +85,6 @@ func (auth *AuthService) saveSecret(secret *types.SimpleSecret) error {
 func (auth *AuthService) getSecretsManager() (*secrets.Manager[*types.SimpleSecret], error) {
 	return factory.SecretsManagerFactory[*types.SimpleSecret](conf.Get().SecretsConf)
 }
+*/
 
 /**********************************************************************************/
