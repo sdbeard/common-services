@@ -55,13 +55,12 @@ import (
 )
 
 var (
-	// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
-	sessionName = "auth-session"
+// isInitialized = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 )
 
 /**********************************************************************************/
 
-func NewAuthService() (*AuthService, error) {
+func NewAuthService(sessionName string) (*AuthService, error) {
 	// Retrieve the jwt secret and refresh keys
 	jwtSecret, jwtRefreshSecret, sessionSecret, err := getAuthServiceSecrets()
 	if err != nil {

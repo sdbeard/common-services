@@ -35,10 +35,11 @@ import (
 )
 
 var (
-	configFile = flag.String("configfile", "config.yaml", "specifies the configuration file to use for the service configuration")
-	build      = ""
-	buildDate  = ""
-	version    = "0.0.0"
+	configFile  = flag.String("configfile", "config.yaml", "specifies the configuration file to use for the service configuration")
+	build       = ""
+	buildDate   = ""
+	version     = "0.0.0"
+	sessionName = "auth-session"
 )
 
 /**********************************************************************************/
@@ -67,7 +68,7 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	authService, _ := NewAuthService()
+	authService, _ := NewAuthService(sessionName)
 	if err := authService.Start(); err != nil {
 		panic(err)
 	}
