@@ -57,10 +57,10 @@ func GetSessionValue[TValue any](req *http.Request, key string) (TValue, error) 
 }
 
 func SetSessionValue(req *http.Request, res http.ResponseWriter, key string, value interface{}) error {
-	session, err := store.Get(req, sessionName)
-	if err != nil {
-		return err
-	}
+	session, _ := store.Get(req, sessionName)
+	//if err != nil {
+	//	return err
+	//}
 
 	session.Values[key] = value
 	return session.Save(req, res)

@@ -21,3 +21,110 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // *********************************************************************************
 package secure
+
+import (
+	"context"
+
+	"github.com/sdbeard/common-services/auth/conf"
+	"github.com/sdbeard/go-supportlib/secure/secrets"
+	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
+	sectypes "github.com/sdbeard/go-supportlib/secure/types"
+)
+
+var (
+	secretMap = make(map[string]*sectypes.SimpleSecret)
+)
+
+/**** exported functions **********************************************************/
+
+func LoadSecrets() error {
+
+}
+
+func GetSecret(name string) (*sectypes.SimpleSecret, error) {
+	secret, ok := secretMap[name]
+	if !ok {
+		return getSecret(name)
+	}
+
+	return secret, nil
+}
+
+func AddNewSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
+	if secret, ok := secretMap[name]; ok {
+		return secret, nil
+	}
+
+	secret, err := createSecret(name, size, expiry)
+	if err != nil {
+		return nil, err
+	}
+
+	secretMap[name] = secret
+
+	return secret, nil
+}
+
+/**********************************************************************************/
+
+func getAllSecrets() error {
+	manager, err := getSecretsManager()
+	if err != nil {
+		return nil, err
+	}
+}
+
+func getSecret(name string) (*sectypes.SimpleSecret, error) {
+	manager, err := getSecretsManager()
+	if err != nil {
+		return nil, err
+	}
+
+	return manager.Retrieve(
+		manager.Retrieve.WithSecretName(name),
+	)
+}
+
+func createSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
+	manager, err := getSecretsManager()
+	if err != nil {
+		return nil, err
+	}
+
+	secret := sectypes.NewSimpleSecret(name, size, expiry)
+	err = manager.Create(
+		secret,
+		manager.Create.WithContext(context.TODO()),
+		manager.Create.WithAllowUpdate(false),
+	)
+
+	return secret, err
+}
+
+func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
+	return factory.SecretsManagerFactory[*sectypes.SimpleSecret](conf.Get().SecretsConf)
+}
+
+/**********************************************************************************/
+
+/*
+func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
+	// Retrieve the jwt secret and refresh keys
+	jwtSecret, err := getSecret("jwtsecretkey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	jwtRefreshSecret, err := getSecret("jwtrefreshsecretkey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	sessionSecret, err := getSecret("sessionkey", true)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return jwtSecret, jwtRefreshSecret, sessionSecret, nil
+}
+*/

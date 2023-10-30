@@ -23,7 +23,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"mime"
 	"net/http"
@@ -47,8 +46,6 @@ import (
 	"github.com/sdbeard/go-supportlib/data/types/common"
 	"github.com/sdbeard/go-supportlib/data/types/dsapi"
 	"github.com/sdbeard/go-supportlib/data/types/util/dataservice"
-	"github.com/sdbeard/go-supportlib/secure/secrets"
-	"github.com/sdbeard/go-supportlib/secure/secrets/factory"
 	sectypes "github.com/sdbeard/go-supportlib/secure/types"
 	logger "github.com/sirupsen/logrus"
 	"github.com/unrolled/render"
@@ -81,6 +78,11 @@ func NewAuthService(sessionName string) (*AuthService, error) {
 	secure.InitSession(sessionSecret.Secret(), sessionName)
 
 	return newService, nil
+}
+
+func initSecrets() error {
+
+	return nil
 }
 
 /**********************************************************************************/
@@ -321,61 +323,6 @@ func (auth *AuthService) saveUser(user *types.User) error {
 
 	// Save the user
 	return auth.save(user)
-}
-
-func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
-	// Retrieve the jwt secret and refresh keys
-	jwtSecret, err := getSecret("jwtsecretkey", true)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	jwtRefreshSecret, err := getSecret("jwtrefreshsecretkey", true)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	sessionSecret, err := getSecret("sessionkey", true)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return jwtSecret, jwtRefreshSecret, sessionSecret, nil
-}
-
-func getSecret(secretId string, createIfMissing bool) (*sectypes.SimpleSecret, error) {
-	manager, err := getSecretsManager()
-	if err != nil {
-		return nil, err
-	}
-
-	secret, err := manager.Retrieve(
-		manager.Retrieve.WithSecretName(secretId),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	if secret.Id() == "" && createIfMissing {
-		return createSecret(manager, secretId)
-	}
-
-	return secret, nil
-}
-
-func createSecret(manager *secrets.Manager[*sectypes.SimpleSecret], secretName string) (*sectypes.SimpleSecret, error) {
-	secret := sectypes.NewSimpleSecret(secretName, 16, 60)
-	err := manager.Create(
-		secret,
-		manager.Create.WithContext(context.TODO()),
-		manager.Create.WithAllowUpdate(false),
-	)
-
-	return secret, err
-}
-
-func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
-	return factory.SecretsManagerFactory[*sectypes.SimpleSecret](conf.Get().SecretsConf)
 }
 
 func (auth *AuthService) createStopChannel() chan os.Signal {
