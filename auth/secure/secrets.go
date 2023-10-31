@@ -111,6 +111,13 @@ func get(name string) (*sectypes.SimpleSecret, error) {
 	secrets, err := manager.Retrieve(
 		manager.Retrieve.WithSecretName(name),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(secrets) == 0 {
+		return nil, nil
+	}
 
 	return secrets[0], err
 }
