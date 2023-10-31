@@ -34,7 +34,7 @@ import (
 )
 
 // TODO: Replace with secret from secrets manager
-var secretKey = []byte("another-secret-key")
+//var secretKey = []byte("another-secret-key")
 
 // Cookies
 // https://golang.ch/how-to-work-with-cookies-in-golang/#:~:text=Basic%20usage%20of%20Cookies%20with%20Golang%201%20Name,SameSite%20constants%20from%20the%20net%2Fhttp%20package.%20More%20items
@@ -52,10 +52,12 @@ func Authorization(next http.Handler) http.Handler {
 		}
 
 		token, err := jwt.Parse(authToken, func(token *jwt.Token) (interface{}, error) {
+			//if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("there was an error in parsing")
 			}
-			return secretKey, nil
+			secret, _ := secure.GetSecret("jwtsecretkey")
+			return secret.Secret(), nil
 		})
 		if err != nil {
 			render.JSON(res, http.StatusInternalServerError, err.Error())

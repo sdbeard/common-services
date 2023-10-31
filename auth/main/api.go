@@ -210,7 +210,7 @@ func (auth *AuthService) authenticate(res http.ResponseWriter, req *http.Request
 	}
 
 	jwtSecret, _ := secure.GetSecret(jwtSecretName)
-	token, err := secure.GenerateJWT(jwtSecret.Secret(), user)
+	token, err := secure.GenerateJWT(jwtSecret.Secret(), jwtSecret.Expiry, user)
 	if err != nil {
 		auth.render.JSON(res, http.StatusUnauthorized, "failed to generate token")
 		return

@@ -32,13 +32,14 @@ import (
 /***** exported functions *********************************************************/
 
 // GenerateJWT created the
-func GenerateJWT(secret []byte, user *types.User) (string, error) {
+func GenerateJWT(secret []byte, expiry time.Duration, user *types.User) (string, error) {
+
 	// Create the claims for the user token
 	claims := jwt.MapClaims{
 		"sub":        user.Id(),
 		"roles":      user.Roles,
 		"authorized": true,
-		"exp":        time.Now().Add(1 * time.Minute).Unix(),
+		"exp":        time.Now().Add(expiry).Unix(),
 	}
 
 	for key, value := range user.Claims {
