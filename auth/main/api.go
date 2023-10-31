@@ -59,15 +59,15 @@ var (
 
 func NewAuthService(sessionName string) (*AuthService, error) {
 	// Retrieve the jwt secret and refresh keys
-	jwtSecret, jwtRefreshSecret, sessionSecret, err := getAuthServiceSecrets()
-	if err != nil {
+	//jwtSecret, jwtRefreshSecret, sessionSecret, err := getAuthServiceSecrets()
+	if err := secure.LoadSecrets(); err != nil {
 		return nil, err
 	}
 
 	newService := &AuthService{
-		render:           render.New(),
-		jwtSecret:        jwtSecret,
-		jwtRefreshSecret: jwtRefreshSecret,
+		render: render.New(),
+		//jwtSecret:        jwtSecret,
+		//jwtRefreshSecret: jwtRefreshSecret,
 	}
 
 	newService.RestService = rest.NewRestService(
@@ -75,7 +75,7 @@ func NewAuthService(sessionName string) (*AuthService, error) {
 		newService.initializeRouter,
 	)
 
-	secure.InitSession(sessionSecret.Secret(), sessionName)
+	//secure.InitSession(sessionSecret.Secret(), sessionName)
 
 	return newService, nil
 }

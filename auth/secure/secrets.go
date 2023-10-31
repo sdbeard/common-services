@@ -38,7 +38,7 @@ var (
 /**** exported functions **********************************************************/
 
 func LoadSecrets() error {
-
+	return load()
 }
 
 func GetSecret(name string) (*sectypes.SimpleSecret, error) {
@@ -67,12 +67,23 @@ func AddNewSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, erro
 
 /**********************************************************************************/
 
-func getAllSecrets() error {
+/*
+func getAllSecrets(createIfMissing bool) error {
 	manager, err := getSecretsManager()
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	secret, err := getSecret("jwtsecret")
+	if err != nil {
+		return err
+	}
+	if secret == nil && createIfMissing {
+	}
+
+	return nil
 }
+*/
 
 func getSecret(name string) (*sectypes.SimpleSecret, error) {
 	manager, err := getSecretsManager()
@@ -80,9 +91,11 @@ func getSecret(name string) (*sectypes.SimpleSecret, error) {
 		return nil, err
 	}
 
-	return manager.Retrieve(
+	secrets, err := manager.Retrieve(
 		manager.Retrieve.WithSecretName(name),
 	)
+
+	return secrets[0], err
 }
 
 func createSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
@@ -107,24 +120,49 @@ func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
 
 /**********************************************************************************/
 
-/*
-func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
-	// Retrieve the jwt secret and refresh keys
-	jwtSecret, err := getSecret("jwtsecretkey", true)
+// func getAuthServiceSecrets() (*sectypes.SimpleSecret, *sectypes.SimpleSecret, *sectypes.SimpleSecret, error) {
+func load() error {
+	manager, err := getSecretsManager()
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
 
-	jwtRefreshSecret, err := getSecret("jwtrefreshsecretkey", true)
+	foundSecrets, err := manager.Retrieve(
+		manager.Retrieve.WithRetrieveAll(),
+	)
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
 
-	sessionSecret, err := getSecret("sessionkey", true)
-	if err != nil {
-		return nil, nil, nil, err
+	for _, secret := range foundSecrets {
+		secretMap[secret.Id()] = secret
 	}
 
-	return jwtSecret, jwtRefreshSecret, sessionSecret, nil
+	return err
+
+	/*
+		// Retrieve the jwt secret and refresh keys
+		jwtSecret, err := getSecret("jwtsecretkey")
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if jwtSecret == nil {
+			jwtSecret, _ = AddNewSecret("jwtsecretkey", 16, 60)
+		}
+	*/
+
+	/*
+		jwtRefreshSecret, err := getSecret("jwtrefreshsecretkey", true)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		sessionSecret, err := getSecret("sessionkey", true)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	*/
+
+	//return jwtSecret, jwtRefreshSecret, sessionSecret, nil
+	//return jwtSecret, nil, nil, nil
 }
-*/
