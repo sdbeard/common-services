@@ -24,6 +24,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"mime"
 	"net/http"
 	"os"
@@ -54,7 +55,7 @@ var (
 	jwtSecretName        = "jwtsecretkey"
 	jwtRefreshSecretName = "jwtrefreshsecretkey"
 	sessionKeyName       = "sessionkey"
-	//isInitialized        = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
+	isInitialized        = util.FileExists(fmt.Sprintf("%s%s%s", conf.Get().WorkingFolder, string(os.PathSeparator), "auth.init"))
 )
 
 /**********************************************************************************/
@@ -166,6 +167,11 @@ func (auth *AuthService) init(res http.ResponseWriter, req *http.Request) {
 		//Allow CORS here By * or specific origin
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		res.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
+
+	if isInitialized {
+		auth.render.JSON(res, http.StatusUnauthorized, "the system has already been initialized, contact an administrator for credentials")
+		return
 	}
 
 	// Get the enrollment object
