@@ -32,37 +32,54 @@ import (
 )
 
 var (
-	secretMap = make(map[string]*sectypes.SimpleSecret)
+	secretMap   = make(map[string]*sectypes.SimpleSecret)
+	secretNames = map[string]int{"jwtsecretkey": 16, "jwtrefreshsecretkey": 16, "sessionkey": 8}
 )
 
 /**** exported functions **********************************************************/
 
 func LoadSecrets() error {
-	return load()
+	if err := load(); err != nil {
+		return err
+	}
+
+	// Check each secret and create if necessary
+	for name, size := range secretNames {
+		if _, err := create(name, int64(size), 60); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func LoadSecret(name string, size, expiry int64) error {
+	secret, err := get(name)
+	if err != nil {
+		return err
+	}
+
+	if secret == nil {
+		_, err = create(name, size, expiry)
+		return err
+	}
+
+	secretMap[secret.Id()] = secret
+
+	return nil
 }
 
 func GetSecret(name string) (*sectypes.SimpleSecret, error) {
 	secret, ok := secretMap[name]
 	if !ok {
-		return getSecret(name)
+		return get(name)
 	}
 
 	return secret, nil
 }
 
 func AddNewSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
-	if secret, ok := secretMap[name]; ok {
-		return secret, nil
-	}
-
-	secret, err := createSecret(name, size, expiry)
-	if err != nil {
-		return nil, err
-	}
-
-	secretMap[name] = secret
-
-	return secret, nil
+	return create(name, size, expiry)
 }
 
 /**********************************************************************************/
@@ -85,7 +102,7 @@ func getAllSecrets(createIfMissing bool) error {
 }
 */
 
-func getSecret(name string) (*sectypes.SimpleSecret, error) {
+func get(name string) (*sectypes.SimpleSecret, error) {
 	manager, err := getSecretsManager()
 	if err != nil {
 		return nil, err
@@ -98,20 +115,28 @@ func getSecret(name string) (*sectypes.SimpleSecret, error) {
 	return secrets[0], err
 }
 
-func createSecret(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
+func create(name string, size, expiry int64) (*sectypes.SimpleSecret, error) {
+	if secret, ok := secretMap[name]; ok {
+		return secret, nil
+	}
+
 	manager, err := getSecretsManager()
 	if err != nil {
 		return nil, err
 	}
 
 	secret := sectypes.NewSimpleSecret(name, size, expiry)
-	err = manager.Create(
+	if err = manager.Create(
 		secret,
 		manager.Create.WithContext(context.TODO()),
 		manager.Create.WithAllowUpdate(false),
-	)
+	); err != nil {
+		return nil, err
+	}
 
-	return secret, err
+	secretMap[name] = secret
+
+	return secret, nil
 }
 
 func getSecretsManager() (*secrets.Manager[*sectypes.SimpleSecret], error) {
