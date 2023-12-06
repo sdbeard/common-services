@@ -65,27 +65,34 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
-	/*
-		authService, _ := NewAuthService(sessionName)
-		if err := authService.Start(); err != nil {
-			panic(err)
-		}
-	*/
+	stop := createStopChannel()
+	ss3Service := NewSS3Service()
+
+	go ss3Service.Start()
+
+	<-stop
+	close(stop)
+
+	logger.Info("The hosting system has signaled the service to shutdown")
+
+	ss3Service.Stop()
 
 	logger.Info("completed execution...shutting down")
 }
 
 /**********************************************************************************/
 
-func (service *Unio) createStopChannel() {
-	service.stopChannel = make(chan os.Signal, 1)
-	signal.Notify(service.stopChannel,
+func createStopChannel() chan os.Signal {
+	stopChannel := make(chan os.Signal, 1)
+	signal.Notify(stopChannel,
 		os.Interrupt,
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 		syscall.SIGHUP,
 		syscall.SIGINT,
 	)
+
+	return stopChannel
 }
 
 /**********************************************************************************/
