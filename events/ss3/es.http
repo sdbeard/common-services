@@ -1,0 +1,52 @@
+PUT http://es.testlab.local/auth_users?pretty
+Content-Type: application/json
+
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "roles": {
+        "type": "text"
+      },
+      "username":{
+        "type": "text"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "org": {
+        "type": "text"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0
+    }
+  }
+}
+
+###
+PUT http://es.testlab.local/auth_admin?pretty
+Content-Type: application/json
+
+{
+  "mappings": {
+    "dynamic": "false",
+    "properties": {
+      "type":{
+        "type": "keyword"
+      },
+      "id": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 3,
+      "number_of_replicas": 0
+    }
+  }
+}
