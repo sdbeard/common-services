@@ -1,0 +1,19 @@
+version: '3.6'
+services:
+  unio:
+    image: registry.testlab.local:5000/unio-bus
+    container_name: unio
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.unio.rule=Host(`fileservice.testlab.local`)"
+      - "traefik.http.routers.unio.entrypoints=web"
+      - "traefik.http.services.unio.loadbalancer.server.port=5000"
+    #extra_hosts:
+    #  - "unio.testlab.local:11.0.0.1"
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    name: traefik
+    external: true

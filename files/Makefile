@@ -21,37 +21,61 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ***********************************************************************************
 SHELL := /bin/bash
+BINARY := files-service
+VERSION := 0.0.1
+REGISTRY := registry.testlab.local:5000/
+DOCKER_REMOTE_HOST := "ssh://testlab"
 
 # ==================================================================================
 # Build support
 
-build: clean
+all: image deploy
+
+build: cleanbin cleandocker
 	docker build \
-	-f ./_zerf/docker/Dockerfile.amd64 \
-	-t ${BINARY}:1.0.0 \
+	-f ./_res/docker/Dockerfile.amd64 \
+	-t ${BINARY}:${VERSION} \
 	--build-arg VCS_REF=`git rev-parse HEAD` \
-	--build-arg BINARY=kp-email \
+	--build-arg BINARY=${BINARY} \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-	--build-arg VERSION=1.0.0 \
+	--build-arg VERSION=${VERSION} \
 	.
 	docker image prune -f
 
 dev: clean
 	DOCKER_BUILDKIT=1 \
 	docker build \
-	-f ./_zerf/docker/Dockerfile.dev \
+	-f ./_res/docker/Dockerfile.bin \
 	--build-arg VCS_REF=`git rev-parse HEAD` \
-	--build-arg BINARY=kp-email \
+	--build-arg BINARY=${BINARY} \
 	--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
-	--build-arg VERSION=1.0.0 \
-	--output type=local,dest=build \
+	--build-arg VERSION=${VERSION} \
+	--output type=local,dest=. \
 	.
-	@mv ./build/kp-email .
 
-clean:
+image: build
+	docker tag ${BINARY}:${VERSION} ${REGISTRY}${BINARY}:${VERSION}
+	docker tag ${BINARY}:${VERSION} ${REGISTRY}${BINARY}
+	docker push ${REGISTRY}${BINARY}:${VERSION}
+	docker push ${REGISTRY}${BINARY}
+
+deploy: cleandeploy
+	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker-compose -f ./_res/compose/docker-compose.testlab.yml up -d
+	
+clean: cleanbin cleandocker cleandeploy
+	$(info Cleaned all processes...")
+
+cleanbin:
 	$(info Cleaning previous build...)
-	@if [ -d ./build ]; then rm -rf ./build; fi
-	@if [ -f ./kp-email ]; then rm -rf ./kp-email; fi
+	@if [ -f ./${BINARY} ]; then rm -rf ./${BINARY}; fi
+
+cleandocker: 
+	$(info Cleaning previous docker build...)
+	docker images --format '{{.Repository}}:{{.Tag}}' | grep ${BINARY} | xargs -I {} docker rmi {}
+
+cleandeploy:
+	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker-compose -f ./_res/compose/docker-compose.testlab.yml down
+	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker images --format '{{.Repository}}:{{.Tag}}' | grep ${BINARY} | DOCKER_HOST=${DOCKER_REMOTE_HOST} xargs -I {} docker rmi {}
 
 # ==================================================================================
 # Modules support
