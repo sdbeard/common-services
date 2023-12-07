@@ -1,8 +1,8 @@
 version: '3.6'
 services:
   unio:
-    image: registry.testlab.local:5000/unio-bus
-    container_name: unio
+    image: registry.testlab.local:5000/files-service
+    container_name: files_service
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.unio.rule=Host(`fileservice.testlab.local`)"
