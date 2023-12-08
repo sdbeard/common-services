@@ -3,7 +3,7 @@ module github.com/sdbeard/common-services/events/ss3
 go 1.21
 
 require (
-	github.com/sdbeard/go-supportlib v0.0.0-20231207212339-b1369c3e27b6
+	github.com/sdbeard/go-supportlib v0.0.0-20231208013104-0222ab246ae6
 	github.com/sirupsen/logrus v1.9.3
 )
 

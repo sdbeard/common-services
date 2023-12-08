@@ -1,6 +1,9 @@
-SS3_AWSCONF=http://localstack.testlab.local@us-east-2@@false@false
-SS3_APICONF=0.0.0.0@5000
-SS3_LOGCONF=console@text@debug
+FILESERVICE_S3=s3://http://localstack.testlab.local@us-east-2@FAKEEEEEEEEEEEEEEEEE,FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK@true@true@uniotest@s3
+FILESERVICE_BUFFER=buffer://
+FILESERVICE_LOCAL=file://./
+FILESERVICE_WEB=web://
+FILESERVICE_APICONF=0.0.0.0@5000
+FILESERVICE_LOGCONF=console@test@debug
 AWS_ACCESS_KEY=FAKEEEEEEEEEEEEEEEEE
 AWS_SECRET_ACCESS_KEY=FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK
 AWS_DEFAULT_REGION=us-east-2
