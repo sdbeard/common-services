@@ -1,4 +1,4 @@
-FILESERVICE_S3=s3://http://localstack.testlab.local@us-east-2@FAKEEEEEEEEEEEEEEEEE,FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK@true@true@uniotest@s3
+FILESERVICE_S3=s3://http://localstack.testlab.local@us-east-2@accesskeyid=FAKEEEEEEEEEEEEEEEEE,secretaccesskey=FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK@true@true@standard@uniotest@s3
 FILESERVICE_BUFFER=buffer://
 FILESERVICE_LOCAL=file://./
 FILESERVICE_WEB=web://
