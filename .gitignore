@@ -25,3 +25,5 @@ __debug_*
 # code
 *.bdb
 auth.init
+
+_tmp
