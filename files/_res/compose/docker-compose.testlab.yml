@@ -7,7 +7,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.files.rule=Host(`fileservice.testlab.local`)"
       - "traefik.http.routers.files.entrypoints=web"
-      - "traefik.http.services.files.loadbalancer.server.port=5000"
+      - "traefik.http.services.files.loadbalancer.server.port=5001"
     extra_hosts:
       - "localstack.testlab.local:11.0.0.1"
     networks:
