@@ -74,7 +74,7 @@ cleandocker:
 	docker images --format '{{.Repository}}:{{.Tag}}' | grep ${BINARY} | xargs -I {} docker rmi {}
 
 cleandeploy:
-	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker-compose -f ./_res/compose/docker-compose.testlab.yml down
+	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker-compose -f ./_res/compose/docker-compose.files.testlab.yml down
 	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker images --format '{{.Repository}}:{{.Tag}}' | grep ${BINARY} | DOCKER_HOST=${DOCKER_REMOTE_HOST} xargs -I {} docker rmi {}
 
 # ==================================================================================
