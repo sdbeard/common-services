@@ -1,13 +1,13 @@
 version: '3.6'
 services:
-  unio:
+  files:
     image: registry.testlab.local:5000/files-service
     container_name: files_service
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.unio.rule=Host(`fileservice.testlab.local`)"
-      - "traefik.http.routers.unio.entrypoints=web"
-      - "traefik.http.services.unio.loadbalancer.server.port=5000"
+      - "traefik.http.routers.files.rule=Host(`fileservice.testlab.local`)"
+      - "traefik.http.routers.files.entrypoints=web"
+      - "traefik.http.services.files.loadbalancer.server.port=5000"
     extra_hosts:
       - "localstack.testlab.local:11.0.0.1"
     networks:
