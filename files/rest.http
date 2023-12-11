@@ -3,3 +3,15 @@ PUT http://127.0.0.1:5000/local/test.txt
 Content-Type: text/plain
 
 This is a test body
+
+###
+PUT http://127.0.0.1:5000/s3/test.txt
+Content-Type: text/plain
+
+This is a test body
+
+###
+PUT http://fileservice.testlab.local/s3/test.txt
+Content-Type: text/plain
+
+This is a test body
