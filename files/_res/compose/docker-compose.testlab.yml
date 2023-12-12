@@ -8,6 +8,11 @@ services:
       - "traefik.http.routers.files.rule=Host(`fileservice.testlab.local`)"
       - "traefik.http.routers.files.entrypoints=web"
       - "traefik.http.services.files.loadbalancer.server.port=5001"
+    environment:
+      FILESERVICE_S3: s3://http://localstack.testlab.local@us-east-2@accesskeyid=FAKEEEEEEEEEEEEEEEEE,secretaccesskey=FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK@true@true@standard@uniotest@s3
+      FILESERVICE_LOCAL: file:///development/src/common-services/files/_tmp
+      FILESERVICE_APICONF: 0.0.0.0@5001
+      FILESERVICE_LOGCONF: console@test@debug
     extra_hosts:
       - "localstack.testlab.local:11.0.0.1"
     networks:
