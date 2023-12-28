@@ -1,7 +1,7 @@
 version: '3.6'
 services:
   files:
-    image: registry.testlab.local:5000/files-service
+    image: aws.testl.local:4510/files-service
     container_name: files_service
     labels:
       - "traefik.enable=true"

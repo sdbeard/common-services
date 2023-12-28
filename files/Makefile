@@ -23,7 +23,7 @@
 SHELL := /bin/bash
 BINARY := files-service
 VERSION := 0.0.1
-REGISTRY := registry.testlab.local:5000/
+REGISTRY := aws.testlab.local:4510/files-service
 DOCKER_REMOTE_HOST := "ssh://testlab"
 
 # ==================================================================================
@@ -54,9 +54,9 @@ dev: clean
 	.
 
 image: build
-	docker tag ${BINARY}:${VERSION} ${REGISTRY}${BINARY}:${VERSION}
-	docker tag ${BINARY}:${VERSION} ${REGISTRY}${BINARY}
-	docker push ${REGISTRY}${BINARY}:${VERSION}
+	docker tag ${BINARY}:${VERSION} ${REGISTRY}:${VERSION}
+	docker tag ${BINARY}:${VERSION} ${REGISTRY}
+	docker push ${REGISTRY}:${VERSION}
 	docker push ${REGISTRY}${BINARY}
 
 deploy: cleandeploy

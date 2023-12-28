@@ -8,3 +8,7 @@ FILESERVICE_LOGCONF=console@test@debug
 AWS_ACCESS_KEY=FAKEEEEEEEEEEEEEEEEE
 AWS_SECRET_ACCESS_KEY=FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK
 AWS_DEFAULT_REGION=us-east-2
+
+Localstack ECR
+--------------------------------------------------
+awslocal ecr create-repository --repository-name files-service --image-scanning-configuration scanOnPush=true
