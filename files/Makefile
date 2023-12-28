@@ -57,7 +57,7 @@ image: build
 	docker tag ${BINARY}:${VERSION} ${REGISTRY}:${VERSION}
 	docker tag ${BINARY}:${VERSION} ${REGISTRY}
 	docker push ${REGISTRY}:${VERSION}
-	docker push ${REGISTRY}${BINARY}
+	docker push ${REGISTRY}
 
 deploy: cleandeploy
 	DOCKER_HOST=${DOCKER_REMOTE_HOST} docker-compose -f ./_res/compose/docker-compose.testlab.yml up -d
