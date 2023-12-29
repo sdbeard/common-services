@@ -44,7 +44,6 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY --from=build_fileservice /src/${BINARY} /app/${BINARY}
-#COPY --from=build_fileservice /src/.env /app/.env
 
 EXPOSE 5001
 
