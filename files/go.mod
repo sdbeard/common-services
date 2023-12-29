@@ -1,11 +1,9 @@
 module github.com/sdbeard/common-services/events/ss3
 
-go 1.21.3
-
-toolchain go1.21.5
+go 1.21.5
 
 require (
-	github.com/sdbeard/go-supportlib v0.0.0-20231228185210-4d3173799501
+	github.com/sdbeard/go-supportlib v0.0.0-20231229122013-fdb66d33fd00
 	github.com/sirupsen/logrus v1.9.3
 )
 
