@@ -1,0 +1,22 @@
+version: "3.6"
+services:
+  proxy:
+    image: aws.testlab.local:4510/proxy-service
+    container_name: files_service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.files.rule=Host(`proxy.testlab.local`)"
+      - "traefik.http.routers.files.entrypoints=web"
+      - "traefik.http.services.files.loadbalancer.server.port=5000"
+    environment:
+      PROXY_APICONF: 0.0.0.0@5000
+      PROXY_LOGCONF: console@test@debug
+    extra_hosts:
+      - "aws.testlab.local:11.0.0.1"
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    name: traefik
+    external: true
