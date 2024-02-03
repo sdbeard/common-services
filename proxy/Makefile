@@ -21,7 +21,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # ***********************************************************************************
 SHELL := /bin/bash
-BINARY := files-service
+BINARY := proxy-service
 VERSION := 0.0.1
 REGISTRY := aws.testlab.local:4510/proxy-service
 DOCKER_REMOTE_HOST := "ssh://testlab"

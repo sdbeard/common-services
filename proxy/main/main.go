@@ -64,6 +64,10 @@ func main() {
 		"PID":        os.Getpid(),
 	}).Infof("Runtime configuration")
 
+	if err := NewProxy().Start(); err != nil {
+		panic(err)
+	}
+
 	logger.Info("completed execution...shutting down")
 }
 

@@ -2,7 +2,7 @@ version: "3.6"
 services:
   proxy:
     image: aws.testlab.local:4510/proxy-service
-    container_name: files_service
+    container_name: proxy_service
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.files.rule=Host(`proxy.testlab.local`)"
