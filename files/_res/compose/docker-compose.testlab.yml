@@ -1,4 +1,4 @@
-version: "3.6"
+version: "3.8"
 services:
   files:
     image: aws.testlab.local:4510/files-service
@@ -7,11 +7,11 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.files.rule=Host(`fileservice.testlab.local`)"
       - "traefik.http.routers.files.entrypoints=web"
-      - "traefik.http.services.files.loadbalancer.server.port=5001"
+      - "traefik.http.services.files.loadbalancer.server.port=5000"
     environment:
       FILESERVICE_S3: s3://http://aws.testlab.local@us-east-2@accesskeyid=FAKEEEEEEEEEEEEEEEEE,secretaccesskey=FakeKeyFakeKeyFakeKeyFakeKeyFakeKeyFakeK@true@false@standard@files
       FILESERVICE_LOCAL: file:///development/src/common-services/files/_tmp
-      FILESERVICE_APICONF: 0.0.0.0@5001
+      FILESERVICE_APICONF: 0.0.0.0@5000
       FILESERVICE_LOGCONF: console@test@debug
     extra_hosts:
       - "aws.testlab.local:11.0.0.1"
