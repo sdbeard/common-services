@@ -14,7 +14,7 @@ services:
       FILESERVICE_APICONF: 0.0.0.0@5000
       FILESERVICE_LOGCONF: console@test@debug
     extra_hosts:
-      - "aws.testlab.local:11.0.0.1"
+      - "aws.testlab.local:11.0.0.10"
     networks:
       - frontend
 
